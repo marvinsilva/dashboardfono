@@ -581,6 +581,40 @@ function extrairTurnoPorHorario(stringDataHora) {
       const texto = String(textoResposta).toUpperCase();
       return /\b(TRAQUEOSTOMIA|TQT|C[AÂ]NULA)\b/.test(texto);
     }
+
+    function verificarAVCAtual(textoResposta) {
+  if (!textoResposta || String(textoResposta).trim() === '') return false;
+
+  // 1. Normaliza o texto (remove acentos e transforma em minúsculo)
+  const textoLimpo = String(textoResposta)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  // 2. Termos de exclusão que indicam evento antigo/histórico
+  const regexTermosPassados = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa)\b/;
+  const regexDataAntiga = /(\(\s*\d{4}\s*\)|\b(em|de)\s+\d{4}\b|\bha\s+\d+\s+(anos|meses|dias)\b)/;
+
+  // 3. Divide o texto por frases/linhas (pontos, ponto e vírgula ou quebras de linha)
+  const frases = textoLimpo.split(/[.;\n]/);
+
+  for (const frase of frases) {
+    // Verifica se a frase cita AVC ou Acidente Vascular Encefálico/Cerebral
+    const temAVC = /\b(avci?|avch|acidente vascular encefalico|acidente vascular cerebral)\b/.test(frase);
+
+    if (temAVC) {
+      // Se a frase contiver AVC, testamos se ela fala de um evento antigo
+      const ePassado = regexTermosPassados.test(frase) || regexDataAntiga.test(frase);
+
+      // Se encontrou AVC e NÃO é um evento antigo na mesma frase, considera episódio novo!
+      if (!ePassado) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
     
     function alternarDropdown() {
       document.getElementById('dropdown-list').classList.toggle('show');
@@ -787,6 +821,7 @@ function processarDadosCSV(linhas) {
       let qtdEsperaValida = 0;
       let qtdSla24h = 0;
       let qtdComTQT = 0;
+      let qtdAVCAgudo = 0;
 
       const contagemSolicitacoesPorDia = {};
       const contagemRespostasPorDia = {};
@@ -823,10 +858,12 @@ function processarDadosCSV(linhas) {
         const nivel = extrairNivelAssistencial(textoResposta);
         const via = extrairViaAlimentacao(textoResposta);
         const temTQT = verificarTraqueostomia(textoResposta);
+        const eAVCAgudo = verificarAVCAtual(textoResposta);
 
         niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
         viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
         if (temTQT) qtdComTQT++;
+        if (eAVCAgudo) qtdAVCAgudo++;
 
         // Conselho Solicitante
         if (conselho && typeof conselho === 'string') {
@@ -949,6 +986,10 @@ function processarDadosCSV(linhas) {
 
       const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
       document.getElementById('kpi-pct-tqt').innerText = pctTQT;
+
+      if (document.getElementById('kpi-total-avc')) {
+    document.getElementById('kpi-total-avc').innerText = qtdAVCAgudo;
+  }
 
       document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
       document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
