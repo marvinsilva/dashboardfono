@@ -467,6 +467,9 @@
 
     const NOME_ARQUIVO_CSV = "DADOS.csv";
     
+// Altere para false quando quiser exibir os nomes originais novamente
+const ANONIMIZAR_CONSULTORES = true;
+
     let dadosBrutosCSV = [];
     let periodoSelecionado = 'TODOS';
     
@@ -792,239 +795,252 @@
     }
 
     function processarDadosCSV(linhas) {
-      const idsProcessados = new Set();
-      const consultores = {};
-      
-      const turnos = { 
-        'Manhã (07h-12h59)': 0, 
-        'Tarde (13h-18h59)': 0, 
-        'Noite (19h-06h59)': 0 
-      };
+  const idsProcessados = new Set();
+  const consultores = {};
+  
+  // Dicionário e contador para a anonimização dos fonoaudiólogos
+  const mapaConsultores = {};
+  let contadorConsultor = 1;
 
-      const niveisAssistenciais = { 'Alto': 0, 'Médio': 0, 'Baixo': 0, 'Não Informado': 0 };
-      const solicitantes = { 'Médicos': 0, 'Enfermeiros': 0, 'Outros/Não Info': 0 };
-      const viasAlimentacao = {};
-      const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
-      const especialidades = {};
-      const tempoEsperaPorUnidade = {};
-      const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
+  const turnos = { 
+    'Manhã (07h-12h59)': 0, 
+    'Tarde (13h-18h59)': 0, 
+    'Noite (19h-06h59)': 0 
+  };
 
-      let somaEspera = 0;
-      let qtdEsperaValida = 0;
-      let qtdSla24h = 0;
-      let qtdComTQT = 0;
+  const niveisAssistenciais = { 'Alto': 0, 'Médio': 0, 'Baixo': 0, 'Não Informado': 0 };
+  const solicitantes = { 'Médicos': 0, 'Enfermeiros': 0, 'Outros/Não Info': 0 };
+  const viasAlimentacao = {};
+  const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
+  const especialidades = {};
+  const tempoEsperaPorUnidade = {};
+  const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
 
-      const contagemSolicitacoesPorDia = {};
-      const contagemRespostasPorDia = {};
-      const conjuntoTodasDatas = new Set();
-      const historicoPacientes = {};
+  let somaEspera = 0;
+  let qtdEsperaValida = 0;
+  let qtdSla24h = 0;
+  let qtdComTQT = 0;
 
-      linhas.forEach(linha => {
-        const idAtendimento = linha['NOME_PACIENTE'];
-        const consultor     = linha['CONSULTOR'];
-        const textoResposta = linha['RESPOSTA'];
-        const conselho      = linha['CONSELHO_SOLIC'];
-        const localAtend    = linha['LOCAL_ATEND'];
-        const espAtend      = linha['ESP_ATENDIMENTO'] || linha['SIGLA_ESPECIALIDADE_ATENDIMENTO'];
-        const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
-        const tempoEspera   = converterParaNumero(valorTempo);
-        
-        const rawSolic      = linha['SOLIC_CONSULTORIA'];
-        const rawResp       = linha['DTHR_RESPOSTA'];
-        const dataSolic     = extrairDataISO(rawSolic);
-        const dataResp      = extrairDataISO(rawResp);
+  const contagemSolicitacoesPorDia = {};
+  const contagemRespostasPorDia = {};
+  const conjuntoTodasDatas = new Set();
+  const historicoPacientes = {};
 
-        const dataHoraRef = rawSolic || rawResp;
-        const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
+  linhas.forEach(linha => {
+    const idAtendimento = linha['NOME_PACIENTE'];
+    const consultor     = linha['CONSULTOR'];
+    const textoResposta = linha['RESPOSTA'];
+    const conselho      = linha['CONSELHO_SOLIC'];
+    const localAtend    = linha['LOCAL_ATEND'];
+    const espAtend      = linha['ESP_ATENDIMENTO'] || linha['SIGLA_ESPECIALIDADE_ATENDIMENTO'];
+    const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
+    const tempoEspera   = converterParaNumero(valorTempo);
+    
+    const rawSolic      = linha['SOLIC_CONSULTORIA'];
+    const rawResp       = linha['DTHR_RESPOSTA'];
+    const dataSolic     = extrairDataISO(rawSolic);
+    const dataResp      = extrairDataISO(rawResp);
 
-        if (turnos[nomeTurno] !== undefined) {
-          turnos[nomeTurno]++;
-        } else {
-          turnos['Outros/Não Info'] = (turnos['Outros/Não Info'] || 0) + 1;
-        }
+    const dataHoraRef = rawSolic || rawResp;
+    const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
 
-        // Extrações de Texto/Regex
-        const nivel = extrairNivelAssistencial(textoResposta);
-        const via = extrairViaAlimentacao(textoResposta);
-        const temTQT = verificarTraqueostomia(textoResposta);
-        const statusAVC = classificarAVC(textoResposta);
+    if (turnos[nomeTurno] !== undefined) {
+      turnos[nomeTurno]++;
+    } else {
+      turnos['Outros/Não Info'] = (turnos['Outros/Não Info'] || 0) + 1;
+    }
 
-        niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
-        viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
-        if (temTQT) qtdComTQT++;
-        dadosAVC[statusAVC]++;
+    // Extrações de Texto/Regex
+    const nivel = extrairNivelAssistencial(textoResposta);
+    const via = extrairViaAlimentacao(textoResposta);
+    const temTQT = verificarTraqueostomia(textoResposta);
+    const statusAVC = classificarAVC(textoResposta);
 
-        // Conselho Solicitante
-        if (conselho && typeof conselho === 'string') {
-          const cUpper = conselho.toUpperCase();
-          if (cUpper.includes('CREMERS')) solicitantes['Médicos']++;
-          else if (cUpper.includes('COREN')) solicitantes['Enfermeiros']++;
-          else solicitantes['Outros/Não Info']++;
-        } else {
-          solicitantes['Outros/Não Info']++;
-        }
+    niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
+    viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
+    if (temTQT) qtdComTQT++;
+    dadosAVC[statusAVC]++;
 
-        // Especialidade Solicitante
-        if (espAtend && String(espAtend).trim() !== '') {
-          const espNome = String(espAtend).trim();
-          especialidades[espNome] = (especialidades[espNome] || 0) + 1;
-        }
+    // Conselho Solicitante
+    if (conselho && typeof conselho === 'string') {
+      const cUpper = conselho.toUpperCase();
+      if (cUpper.includes('CREMERS')) solicitantes['Médicos']++;
+      else if (cUpper.includes('COREN')) solicitantes['Enfermeiros']++;
+      else solicitantes['Outros/Não Info']++;
+    } else {
+      solicitantes['Outros/Não Info']++;
+    }
 
-        // Dias da Semana
-        if (dataSolic) {
-          contagemSolicitacoesPorDia[dataSolic] = (contagemSolicitacoesPorDia[dataSolic] || 0) + 1;
-          conjuntoTodasDatas.add(dataSolic);
+    // Especialidade Solicitante
+    if (espAtend && String(espAtend).trim() !== '') {
+      const espNome = String(espAtend).trim();
+      especialidades[espNome] = (especialidades[espNome] || 0) + 1;
+    }
 
-          const dataObj = new Date(dataSolic + "T00:00:00");
-          const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-          const nomeDia = nomesDias[dataObj.getDay()];
-          if (diasSemana[nomeDia] !== undefined) diasSemana[nomeDia]++;
-        }
+    // Dias da Semana
+    if (dataSolic) {
+      contagemSolicitacoesPorDia[dataSolic] = (contagemSolicitacoesPorDia[dataSolic] || 0) + 1;
+      conjuntoTodasDatas.add(dataSolic);
 
-        if (dataResp) {
-          contagemRespostasPorDia[dataResp] = (contagemRespostasPorDia[dataResp] || 0) + 1;
-          conjuntoTodasDatas.add(dataResp);
-        }
-        
-        if (!idAtendimento || String(idAtendimento).trim() === '') return;
-        const idPac = String(idAtendimento).trim();
-        idsProcessados.add(idPac);
+      const dataObj = new Date(dataSolic + "T00:00:00");
+      const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      const nomeDia = nomesDias[dataObj.getDay()];
+      if (diasSemana[nomeDia] !== undefined) diasSemana[nomeDia]++;
+    }
 
-        const dataRef = dataResp || dataSolic;
-        if (dataRef) {
-          if (!historicoPacientes[idPac]) historicoPacientes[idPac] = [];
-          historicoPacientes[idPac].push({
-            data: new Date(dataRef + "T00:00:00"),
-            fois: extrairNotaEscala(textoResposta, 'FOIS'),
-            asha: extrairNotaEscala(textoResposta, 'ASHA')
-          });
-        }
+    if (dataResp) {
+      contagemRespostasPorDia[dataResp] = (contagemRespostasPorDia[dataResp] || 0) + 1;
+      conjuntoTodasDatas.add(dataResp);
+    }
+    
+    if (!idAtendimento || String(idAtendimento).trim() === '') return;
+    const idPac = String(idAtendimento).trim();
+    idsProcessados.add(idPac);
 
-        if (consultor && String(consultor).trim() !== '') {
-          const nomeConsultor = String(consultor).trim();
-          consultores[nomeConsultor] = (consultores[nomeConsultor] || 0) + 1;
-        }
-
-        if (!isNaN(tempoEspera)) {
-          somaEspera += tempoEspera;
-          qtdEsperaValida++;
-          if (tempoEspera <= 24) qtdSla24h++;
-
-          if (localAtend && String(localAtend).trim() !== '') {
-            const loc = String(localAtend).trim();
-            if (!tempoEsperaPorUnidade[loc]) tempoEsperaPorUnidade[loc] = { soma: 0, count: 0 };
-            tempoEsperaPorUnidade[loc].soma += tempoEspera;
-            tempoEsperaPorUnidade[loc].count++;
-          }
-        }
+    const dataRef = dataResp || dataSolic;
+    if (dataRef) {
+      if (!historicoPacientes[idPac]) historicoPacientes[idPac] = [];
+      historicoPacientes[idPac].push({
+        data: new Date(dataRef + "T00:00:00"),
+        fois: extrairNotaEscala(textoResposta, 'FOIS'),
+        asha: extrairNotaEscala(textoResposta, 'ASHA')
       });
+    }
 
-      // Cálculos de FOIS, ASHA e Evolução Funcional
-      const deltasFOIS = [];
-      const deltasASHA = [];
-      let pacientesEvoluiramPositivo = 0;
-      let totalPacientesComFOISMultiplo = 0;
+    // Processamento com suporte à anonimização
+    if (consultor && String(consultor).trim() !== '') {
+      let nomeConsultor = String(consultor).trim();
 
-      const entradaFOIS = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
-      const saidaFOIS   = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
-
-      Object.values(historicoPacientes).forEach(registros => {
-        registros.sort((a, b) => a.data - b.data);
-
-        const comFOIS = registros.filter(r => r.fois !== null);
-        if (comFOIS.length > 0) {
-          const primeiroFOIS = comFOIS[0].fois;
-          const ultimoFOIS = comFOIS[comFOIS.length - 1].fois;
-
-          const classificarFaixa = (n) => n <= 3 ? 'Nível 1-3' : (n === 4 ? 'Nível 4' : 'Nível 5-7');
-          entradaFOIS[classificarFaixa(primeiroFOIS)]++;
-          saidaFOIS[classificarFaixa(ultimoFOIS)]++;
-
-          if (comFOIS.length >= 2) {
-            totalPacientesComFOISMultiplo++;
-            const diff = ultimoFOIS - primeiroFOIS;
-            deltasFOIS.push(diff);
-            if (diff > 0) pacientesEvoluiramPositivo++;
-          }
+      if (typeof ANONIMIZAR_CONSULTORES !== 'undefined' && ANONIMIZAR_CONSULTORES) {
+        if (!mapaConsultores[nomeConsultor]) {
+          mapaConsultores[nomeConsultor] = `Fonoaudiólogo ${contadorConsultor++}`;
         }
-
-        const comASHA = registros.filter(r => r.asha !== null);
-        if (comASHA.length >= 2) {
-          deltasASHA.push(comASHA[comASHA.length - 1].asha - comASHA[0].asha);
-        }
-      });
-
-      const mediaFOIS = deltasFOIS.length > 0 ? (deltasFOIS.reduce((a, b) => a + b, 0) / deltasFOIS.length).toFixed(2) : null;
-      const mediaASHA = deltasASHA.length > 0 ? (deltasASHA.reduce((a, b) => a + b, 0) / deltasASHA.length).toFixed(2) : null;
-      
-      // Atualização dos Cards de KPI
-      document.getElementById('kpi-total-unicos').innerText = idsProcessados.size;
-      document.getElementById('kpi-total-registros').innerText = linhas.length;
-      
-      const pctSla = qtdEsperaValida > 0 ? ((qtdSla24h / qtdEsperaValida) * 100).toFixed(1) + "%" : "0%";
-      document.getElementById('kpi-sla-24h').innerText = pctSla;
-
-      const mediaEspera = qtdEsperaValida > 0 ? (somaEspera / qtdEsperaValida).toFixed(1) : 0;
-      document.getElementById('kpi-tempo-medio').innerText = `${mediaEspera} h`;
-
-      const mediaSessoes = idsProcessados.size > 0 ? (linhas.length / idsProcessados.size).toFixed(1) : "0";
-      document.getElementById('kpi-sessoes-paciente').innerText = mediaSessoes;
-
-      const pctEvolucao = totalPacientesComFOISMultiplo > 0 ? ((pacientesEvoluiramPositivo / totalPacientesComFOISMultiplo) * 100).toFixed(1) + "%" : "N/D";
-      document.getElementById('kpi-pct-evolucao').innerText = pctEvolucao;
-
-      const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
-      document.getElementById('kpi-pct-tqt').innerText = pctTQT;
-
-      document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
-      document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
-
-      // Filtro da Linha do Tempo
-      let datasOrdenadas = Array.from(conjuntoTodasDatas).sort();
-      if (datasOrdenadas.length > 0 && periodoSelecionado !== 'TODOS') {
-        const dataMaisRecenteISO = datasOrdenadas[datasOrdenadas.length - 1];
-        const dataAncora = new Date(dataMaisRecenteISO + "T00:00:00");
-        let dataLimite = new Date(dataAncora);
-        if (periodoSelecionado === '1Y') dataLimite.setFullYear(dataAncora.getFullYear() - 1);
-        else if (periodoSelecionado === '6M') dataLimite.setMonth(dataAncora.getMonth() - 6);
-        else if (periodoSelecionado === '3M') dataLimite.setMonth(dataAncora.getMonth() - 3);
-        else if (periodoSelecionado === '1M') dataLimite.setMonth(dataAncora.getMonth() - 1);
-        else if (periodoSelecionado === '1W') dataLimite.setDate(dataAncora.getDate() - 7);
-        else if (periodoSelecionado === '1D') dataLimite.setDate(dataAncora.getDate() - 1);
-
-        datasOrdenadas = datasOrdenadas.filter(dataISO => new Date(dataISO + "T00:00:00") >= dataLimite);
+        nomeConsultor = mapaConsultores[nomeConsultor];
       }
 
-      const rotulosDatas = datasOrdenadas.map(dataISO => formatarDataExibicao(dataISO));
-      const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
-      const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
-
-      // RENDERIZAÇÃO DOS GRÁFICOS
-      renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
-      renderizarGraficoNivelAssistencial(niveisAssistenciais);
-      
-      const consultoresOriginais = Object.entries(consultores);
-      renderizarGraficoBarras('graficoConsultores', consultoresOriginais.map(i => i[0]), consultoresOriginais.map(i => i[1]), 'Atendimentos');
-      
-      renderizarGraficoPizza('graficoTurnos', Object.keys(turnos), Object.values(turnos));
-      renderizarGraficoSolicitantes(Object.keys(solicitantes), Object.values(solicitantes));
-
-      renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
-      renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
-      renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
-      renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
-
-      // Top Especialidades Solicitantes
-      const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
-      renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
-
-      // Top Unidades Tempo de Espera
-      const rankingUnidades = Object.entries(tempoEsperaPorUnidade)
-        .map(([loc, obj]) => ({ loc, media: obj.soma / obj.count }))
-        .sort((a,b) => b.media - a.media)
-        .slice(0, 8);
-      renderizarGraficoBarraHorizontal('graficoEsperaUnidades', rankingUnidades.map(i => i.loc), rankingUnidades.map(i => i.media.toFixed(1)), '#dc3545');
+      consultores[nomeConsultor] = (consultores[nomeConsultor] || 0) + 1;
     }
+
+    if (!isNaN(tempoEspera)) {
+      somaEspera += tempoEspera;
+      qtdEsperaValida++;
+      if (tempoEspera <= 24) qtdSla24h++;
+
+      if (localAtend && String(localAtend).trim() !== '') {
+        const loc = String(localAtend).trim();
+        if (!tempoEsperaPorUnidade[loc]) tempoEsperaPorUnidade[loc] = { soma: 0, count: 0 };
+        tempoEsperaPorUnidade[loc].soma += tempoEspera;
+        tempoEsperaPorUnidade[loc].count++;
+      }
+    }
+  });
+
+  // Cálculos de FOIS, ASHA e Evolução Funcional
+  const deltasFOIS = [];
+  const deltasASHA = [];
+  let pacientesEvoluiramPositivo = 0;
+  let totalPacientesComFOISMultiplo = 0;
+
+  const entradaFOIS = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
+  const saidaFOIS   = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
+
+  Object.values(historicoPacientes).forEach(registros => {
+    registros.sort((a, b) => a.data - b.data);
+
+    const comFOIS = registros.filter(r => r.fois !== null);
+    if (comFOIS.length > 0) {
+      const primeiroFOIS = comFOIS[0].fois;
+      const ultimoFOIS = comFOIS[comFOIS.length - 1].fois;
+
+      const classificarFaixa = (n) => n <= 3 ? 'Nível 1-3' : (n === 4 ? 'Nível 4' : 'Nível 5-7');
+      entradaFOIS[classificarFaixa(primeiroFOIS)]++;
+      saidaFOIS[classificarFaixa(ultimoFOIS)]++;
+
+      if (comFOIS.length >= 2) {
+        totalPacientesComFOISMultiplo++;
+        const diff = ultimoFOIS - primeiroFOIS;
+        deltasFOIS.push(diff);
+        if (diff > 0) pacientesEvoluiramPositivo++;
+      }
+    }
+
+    const comASHA = registros.filter(r => r.asha !== null);
+    if (comASHA.length >= 2) {
+      deltasASHA.push(comASHA[comASHA.length - 1].asha - comASHA[0].asha);
+    }
+  });
+
+  const mediaFOIS = deltasFOIS.length > 0 ? (deltasFOIS.reduce((a, b) => a + b, 0) / deltasFOIS.length).toFixed(2) : null;
+  const mediaASHA = deltasASHA.length > 0 ? (deltasASHA.reduce((a, b) => a + b, 0) / deltasASHA.length).toFixed(2) : null;
+  
+  // Atualização dos Cards de KPI
+  document.getElementById('kpi-total-unicos').innerText = idsProcessados.size;
+  document.getElementById('kpi-total-registros').innerText = linhas.length;
+  
+  const pctSla = qtdEsperaValida > 0 ? ((qtdSla24h / qtdEsperaValida) * 100).toFixed(1) + "%" : "0%";
+  document.getElementById('kpi-sla-24h').innerText = pctSla;
+
+  const mediaEspera = qtdEsperaValida > 0 ? (somaEspera / qtdEsperaValida).toFixed(1) : 0;
+  document.getElementById('kpi-tempo-medio').innerText = `${mediaEspera} h`;
+
+  const mediaSessoes = idsProcessados.size > 0 ? (linhas.length / idsProcessados.size).toFixed(1) : "0";
+  document.getElementById('kpi-sessoes-paciente').innerText = mediaSessoes;
+
+  const pctEvolucao = totalPacientesComFOISMultiplo > 0 ? ((pacientesEvoluiramPositivo / totalPacientesComFOISMultiplo) * 100).toFixed(1) + "%" : "N/D";
+  document.getElementById('kpi-pct-evolucao').innerText = pctEvolucao;
+
+  const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
+  document.getElementById('kpi-pct-tqt').innerText = pctTQT;
+
+  document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
+  document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
+
+  // Filtro da Linha do Tempo
+  let datasOrdenadas = Array.from(conjuntoTodasDatas).sort();
+  if (datasOrdenadas.length > 0 && periodoSelecionado !== 'TODOS') {
+    const dataMaisRecenteISO = datasOrdenadas[datasOrdenadas.length - 1];
+    const dataAncora = new Date(dataMaisRecenteISO + "T00:00:00");
+    let dataLimite = new Date(dataAncora);
+    if (periodoSelecionado === '1Y') dataLimite.setFullYear(dataAncora.getFullYear() - 1);
+    else if (periodoSelecionado === '6M') dataLimite.setMonth(dataAncora.getMonth() - 6);
+    else if (periodoSelecionado === '3M') dataLimite.setMonth(dataAncora.getMonth() - 3);
+    else if (periodoSelecionado === '1M') dataLimite.setMonth(dataAncora.getMonth() - 1);
+    else if (periodoSelecionado === '1W') dataLimite.setDate(dataAncora.getDate() - 7);
+    else if (periodoSelecionado === '1D') dataLimite.setDate(dataAncora.getDate() - 1);
+
+    datasOrdenadas = datasOrdenadas.filter(dataISO => new Date(dataISO + "T00:00:00") >= dataLimite);
+  }
+
+  const rotulosDatas = datasOrdenadas.map(dataISO => formatarDataExibicao(dataISO));
+  const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
+  const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
+
+  // RENDERIZAÇÃO DOS GRÁFICOS
+  renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
+  renderizarGraficoNivelAssistencial(niveisAssistenciais);
+  
+  const consultoresOriginais = Object.entries(consultores);
+  renderizarGraficoBarras('graficoConsultores', consultoresOriginais.map(i => i[0]), consultoresOriginais.map(i => i[1]), 'Atendimentos');
+  
+  renderizarGraficoPizza('graficoTurnos', Object.keys(turnos), Object.values(turnos));
+  renderizarGraficoSolicitantes(Object.keys(solicitantes), Object.values(solicitantes));
+
+  renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
+  renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
+  renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
+  renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
+
+  // Top Especialidades Solicitantes
+  const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
+  renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
+
+  // Top Unidades Tempo de Espera
+  const rankingUnidades = Object.entries(tempoEsperaPorUnidade)
+    .map(([loc, obj]) => ({ loc, media: obj.soma / obj.count }))
+    .sort((a,b) => b.media - a.media)
+    .slice(0, 8);
+  renderizarGraficoBarraHorizontal('graficoEsperaUnidades', rankingUnidades.map(i => i.loc), rankingUnidades.map(i => i.media.toFixed(1)), '#dc3545');
+}
 
     // FUNÇÕES DE RENDERIZAÇÃO DOS GRÁFICOS
     function renderizarGraficoLinhaTempo(labelsDatas, dadosSolicitados, dadosAtendidos) {
