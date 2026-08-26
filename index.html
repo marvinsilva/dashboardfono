@@ -450,6 +450,11 @@
     </div>
 
     <div class="chart-card">
+      <h2>Prevalência de AVC</h2>
+      <canvas id="graficoAVC"></canvas>
+    </div>
+
+    <div class="chart-card">
       <h2>Distribuição por Turno</h2>
       <canvas id="graficoTurnos"></canvas>
     </div>
@@ -476,6 +481,7 @@
     let instanciaGraficoDiaSemana = null;
     let instanciaGraficoEspecialidades = null;
     let instanciaGraficoEsperaUnidades = null;
+    let instanciaGraficoAVC = null;
 
     function converterParaNumero(valor) {
       if (!valor) return NaN;
@@ -507,32 +513,30 @@
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
-function extrairTurnoPorHorario(stringDataHora) {
-  if (!stringDataHora || String(stringDataHora).trim() === '') return 'Não Informado';
-  const texto = String(stringDataHora).trim();
-  
-  let hora = null;
-  // Extrai a hora do formato "DD/MM/AAAA HH:MM" ou "AAAA-MM-DD HH:MM:SS"
-  if (texto.includes(' ')) {
-    const parteHora = texto.split(' ')[1];
-    if (parteHora && parteHora.includes(':')) {
-      hora = parseInt(parteHora.split(':')[0], 10);
+    function extrairTurnoPorHorario(stringDataHora) {
+      if (!stringDataHora || String(stringDataHora).trim() === '') return 'Não Informado';
+      const texto = String(stringDataHora).trim();
+      
+      let hora = null;
+      if (texto.includes(' ')) {
+        const parteHora = texto.split(' ')[1];
+        if (parteHora && parteHora.includes(':')) {
+          hora = parseInt(parteHora.split(':')[0], 10);
+        }
+      }
+      
+      if (hora === null || isNaN(hora)) return 'Não Informado';
+
+      if (hora >= 7 && hora <= 12) {
+        return 'Manhã (07h-12h59)';
+      } else if (hora >= 13 && hora <= 18) {
+        return 'Tarde (13h-18h59)';
+      } else {
+        return 'Noite (19h-06h59)';
+      }
     }
-  }
-  
-  if (hora === null || isNaN(hora)) return 'Não Informado';
 
-  // Lógica dos 3 Turnos
-  if (hora >= 7 && hora <= 12) {
-    return 'Manhã (07h-12h59)';
-  } else if (hora >= 13 && hora <= 18) {
-    return 'Tarde (13h-18h59)';
-  } else {
-    return 'Noite (19h-06h59)';
-  }
-}
-
-    // EXTRAÇÕES VIA REGEX CORRIGIDAS
+    // EXTRAÇÕES VIA REGEX
     function extrairNivelAssistencial(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
       const textoLimpo = String(textoResposta)
@@ -582,39 +586,31 @@ function extrairTurnoPorHorario(stringDataHora) {
       return /\b(TRAQUEOSTOMIA|TQT|C[AÂ]NULA)\b/.test(texto);
     }
 
-    function verificarAVCAtual(textoResposta) {
-  if (!textoResposta || String(textoResposta).trim() === '') return false;
+    function classificarAVC(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
 
-  // 1. Normaliza o texto (remove acentos e transforma em minúsculo)
-  const textoLimpo = String(textoResposta)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+      const textoLimpo = String(textoResposta)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
 
-  // 2. Termos de exclusão que indicam evento antigo/histórico
-  const regexTermosPassados = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa)\b/;
-  const regexDataAntiga = /(\(\s*\d{4}\s*\)|\b(em|de)\s+\d{4}\b|\bha\s+\d+\s+(anos|meses|dias)\b)/;
+      const regexTermosPassados = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa)\b/;
+      const regexDataAntiga = /(\(\s*\d{4}\s*\)|\b(em|de)\s+\d{4}\b|\bha\s+\d+\s+(anos|meses|dias)\b)/;
 
-  // 3. Divide o texto por frases/linhas (pontos, ponto e vírgula ou quebras de linha)
-  const frases = textoLimpo.split(/[.;\n]/);
+      const frases = textoLimpo.split(/[.;\n]/);
+      let temPrevio = false;
 
-  for (const frase of frases) {
-    // Verifica se a frase cita AVC ou Acidente Vascular Encefálico/Cerebral
-    const temAVC = /\b(avci?|avch|acidente vascular encefalico|acidente vascular cerebral)\b/.test(frase);
-
-    if (temAVC) {
-      // Se a frase contiver AVC, testamos se ela fala de um evento antigo
-      const ePassado = regexTermosPassados.test(frase) || regexDataAntiga.test(frase);
-
-      // Se encontrou AVC e NÃO é um evento antigo na mesma frase, considera episódio novo!
-      if (!ePassado) {
-        return true;
+      for (const frase of frases) {
+        const temAVC = /\b(avci?|avch|acidente vascular encefalico|acidente vascular cerebral)\b/.test(frase);
+        if (temAVC) {
+          const ePassado = regexTermosPassados.test(frase) || regexDataAntiga.test(frase);
+          if (!ePassado) return 'AVC Agudo/Atual';
+          temPrevio = true;
+        }
       }
-    }
-  }
 
-  return false;
-}
+      return temPrevio ? 'AVC Prévio/Histórico' : 'Outros/Sem AVC';
+    }
     
     function alternarDropdown() {
       document.getElementById('dropdown-list').classList.toggle('show');
@@ -708,51 +704,47 @@ function extrairTurnoPorHorario(stringDataHora) {
     }
 
     function carregarCSVManual(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+      const file = event.target.files[0];
+      if (!file) return;
 
-  const reader = new FileReader();
+      const reader = new FileReader();
 
-  reader.onload = function(e) {
-    const buffer = e.target.result;
-    let texto;
+      reader.onload = function(e) {
+        const buffer = e.target.result;
+        let texto;
 
-    // 1. Tenta decodificar como UTF-8 estrito
-    try {
-      const decoder = new TextDecoder('utf-8', { fatal: true });
-      texto = decoder.decode(buffer);
-    } catch (err) {
-      // 2. Se der erro de validação (arquivo em ANSI/ISO do Excel), usa ISO-8859-1
-      const decoder = new TextDecoder('iso-8859-1');
-      texto = decoder.decode(buffer);
-    }
-
-    // 3. Entrega o texto já corrigido para o PapaParse
-    Papa.parse(texto, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: function(header) {
-        return header.replace(/^\uFEFF/, '').trim();
-      },
-      complete: function(results) {
-        if (results.data && results.data.length > 0) {
-          dadosBrutosCSV = results.data;
-          preencherOpcoesDeFiltro(dadosBrutosCSV);
-          configurarLimitesDatas(dadosBrutosCSV);
-          processarDadosCSV(dadosBrutosCSV);
-        } else {
-          alert("O arquivo selecionado está vazio ou incorreto.");
+        try {
+          const decoder = new TextDecoder('utf-8', { fatal: true });
+          texto = decoder.decode(buffer);
+        } catch (err) {
+          const decoder = new TextDecoder('iso-8859-1');
+          texto = decoder.decode(buffer);
         }
-      },
-      error: function(err) {
-        alert("Erro ao ler o arquivo CSV: " + err);
-      }
-    });
-  };
 
-  // Lê o arquivo em formato de memória bruta para validar a codificação
-  reader.readAsArrayBuffer(file);
-}
+        Papa.parse(texto, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: function(header) {
+            return header.replace(/^\uFEFF/, '').trim();
+          },
+          complete: function(results) {
+            if (results.data && results.data.length > 0) {
+              dadosBrutosCSV = results.data;
+              preencherOpcoesDeFiltro(dadosBrutosCSV);
+              configurarLimitesDatas(dadosBrutosCSV);
+              processarDadosCSV(dadosBrutosCSV);
+            } else {
+              alert("O arquivo selecionado está vazio ou incorreto.");
+            }
+          },
+          error: function(err) {
+            alert("Erro ao ler o arquivo CSV: " + err);
+          }
+        });
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
 
     function aplicarFiltro() {
       const checkboxes = document.querySelectorAll('.chk-area');
@@ -799,11 +791,10 @@ function extrairTurnoPorHorario(stringDataHora) {
       processarDadosCSV(dadosFiltrados);
     }
 
-function processarDadosCSV(linhas) {
+    function processarDadosCSV(linhas) {
       const idsProcessados = new Set();
       const consultores = {};
       
-      // Inicializa os 3 turnos fixos
       const turnos = { 
         'Manhã (07h-12h59)': 0, 
         'Tarde (13h-18h59)': 0, 
@@ -816,12 +807,12 @@ function processarDadosCSV(linhas) {
       const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
       const especialidades = {};
       const tempoEsperaPorUnidade = {};
+      const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
 
       let somaEspera = 0;
       let qtdEsperaValida = 0;
       let qtdSla24h = 0;
       let qtdComTQT = 0;
-      let qtdAVCAgudo = 0;
 
       const contagemSolicitacoesPorDia = {};
       const contagemRespostasPorDia = {};
@@ -838,13 +829,11 @@ function processarDadosCSV(linhas) {
         const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
         const tempoEspera   = converterParaNumero(valorTempo);
         
-        // Datas brutas e formatadas ISO
         const rawSolic      = linha['SOLIC_CONSULTORIA'];
         const rawResp       = linha['DTHR_RESPOSTA'];
         const dataSolic     = extrairDataISO(rawSolic);
         const dataResp      = extrairDataISO(rawResp);
 
-        // --- CÁLCULO DO TURNO POR HORÁRIO DA SOLICITAÇÃO/RESPOSTA ---
         const dataHoraRef = rawSolic || rawResp;
         const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
 
@@ -858,12 +847,12 @@ function processarDadosCSV(linhas) {
         const nivel = extrairNivelAssistencial(textoResposta);
         const via = extrairViaAlimentacao(textoResposta);
         const temTQT = verificarTraqueostomia(textoResposta);
-        const eAVCAgudo = verificarAVCAtual(textoResposta);
+        const statusAVC = classificarAVC(textoResposta);
 
         niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
         viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
         if (temTQT) qtdComTQT++;
-        if (eAVCAgudo) qtdAVCAgudo++;
+        dadosAVC[statusAVC]++;
 
         // Conselho Solicitante
         if (conselho && typeof conselho === 'string') {
@@ -987,10 +976,6 @@ function processarDadosCSV(linhas) {
       const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
       document.getElementById('kpi-pct-tqt').innerText = pctTQT;
 
-      if (document.getElementById('kpi-total-avc')) {
-    document.getElementById('kpi-total-avc').innerText = qtdAVCAgudo;
-  }
-
       document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
       document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
 
@@ -1027,7 +1012,8 @@ function processarDadosCSV(linhas) {
       renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
       renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
       renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
-      
+      renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
+
       // Top Especialidades Solicitantes
       const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
       renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
@@ -1087,38 +1073,36 @@ function processarDadosCSV(linhas) {
     }
 
     function renderizarGraficoBarraHorizontal(idCanvas, rotulos, dados, cor) {
-  // 1. Destrói a instância certa com base no ID que recebeu
-  if (idCanvas === 'graficoEspecialidades' && instanciaGraficoEspecialidades) {
-    instanciaGraficoEspecialidades.destroy();
-  } else if (idCanvas === 'graficoEsperaUnidades' && instanciaGraficoEsperaUnidades) {
-    instanciaGraficoEsperaUnidades.destroy();
-  }
+      if (idCanvas === 'graficoEspecialidades' && instanciaGraficoEspecialidades) {
+        instanciaGraficoEspecialidades.destroy();
+      } else if (idCanvas === 'graficoEsperaUnidades' && instanciaGraficoEsperaUnidades) {
+        instanciaGraficoEsperaUnidades.destroy();
+      }
 
-  const canvas = document.getElementById(idCanvas);
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+      const canvas = document.getElementById(idCanvas);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
 
-  const novoGrafico = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: rotulos,
-      datasets: [{ data: dados, backgroundColor: cor, borderRadius: 4 }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      plugins: { legend: { display: false }, datalabels: { display: false } },
-      scales: { x: { beginAtZero: true } }
+      const novoGrafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rotulos,
+          datasets: [{ data: dados, backgroundColor: cor, borderRadius: 4 }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+
+      if (idCanvas === 'graficoEspecialidades') {
+        instanciaGraficoEspecialidades = novoGrafico;
+      } else if (idCanvas === 'graficoEsperaUnidades') {
+        instanciaGraficoEsperaUnidades = novoGrafico;
+      }
     }
-  });
-
-  // 2. Guarda a referência na variável individual correspondente
-  if (idCanvas === 'graficoEspecialidades') {
-    instanciaGraficoEspecialidades = novoGrafico;
-  } else if (idCanvas === 'graficoEsperaUnidades') {
-    instanciaGraficoEsperaUnidades = novoGrafico;
-  }
-}
 
     function renderizarGraficoNivelAssistencial(dadosNiveis) {
       if (instanciaGraficoNivel) instanciaGraficoNivel.destroy();
@@ -1216,6 +1200,37 @@ function processarDadosCSV(linhas) {
                 if (sum === 0 || value === 0) return '';
                 let perc = (value * 100 / sum);
                 return perc < 5 ? '' : parseFloat(perc.toFixed(1)) + "%";
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderizarGraficoAVC(rotulos, dados) {
+      if (instanciaGraficoAVC) instanciaGraficoAVC.destroy();
+
+      const ctx = document.getElementById('graficoAVC').getContext('2d');
+      instanciaGraficoAVC = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: rotulos,
+          datasets: [{
+            data: dados,
+            backgroundColor: ['#dc3545', '#ffc107', '#ced4da']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            datalabels: {
+              color: '#333',
+              font: { weight: 'bold', size: 11 },
+              formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (sum === 0 || value === 0) return '';
+                let perc = (value * 100 / sum);
+                return perc < 3 ? '' : parseFloat(perc.toFixed(1)) + "%";
               }
             }
           }
