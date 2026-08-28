@@ -591,31 +591,54 @@ const ANONIMIZAR_CONSULTORES = true;
     }
 
     function classificarAVC(textoResposta) {
-      if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
+  if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
 
-      const textoLimpo = String(textoResposta)
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
+  // 1. Limpeza e normalização básica
+  const textoLimpo = String(textoResposta)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
-      const regexTermosPassados = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa)\b/;
-      const regexDataAntiga = /(\(\s*\d{4}\s*\)|\b(em|de)\s+\d{4}\b|\bha\s+\d+\s+(anos|meses|dias)\b)/;
+  // 2. Termos diagnósticos (AVC, AVCI, AVCH, AVE, AVEI, AVEH, AIT, Ictus)
+  const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus)\b/i;
 
-      const frases = textoLimpo.split(/[.;\n]/);
-      let temPrevio = false;
+  if (!regexAVC.test(textoLimpo)) {
+    return 'Outros/Sem AVC';
+  }
 
-      for (const frase of frases) {
-        const temAVC = /\b(avci?|avch|acidente vascular encefalico|acidente vascular cerebral)\b/.test(frase);
-        if (temAVC) {
-          const ePassado = regexTermosPassados.test(frase) || regexDataAntiga.test(frase);
-          if (!ePassado) return 'AVC Agudo/Atual';
-          temPrevio = true;
-        }
+  // 3. Regras temporais e contextuais
+  const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes)\b/;
+  const regexTempoPassado = /(\(\s*\d{4}\s*\)|\b(em|de)\s+(19\d\d|20[0-2][0-6])\b|\bha\s+\d+\s+(anos|meses)\b)/;
+
+  const regexAgudo = /\b(agudo|aguda|recente|recentes|subagudo|subaguda|atual|hda|novo|nova|recorrente|recorrencia)\b/;
+  const regexTempoAgudo = /\bha\s+\d+\s+(dias|horas)\b/;
+
+  // 4. Análise segmento por segmento
+  const segmentos = textoLimpo.split(/[.;\n,\/]/);
+  let temAgudo = false;
+  let temPrevio = false;
+
+  for (const seg of segmentos) {
+    if (regexAVC.test(seg)) {
+      const eAgudo = regexAgudo.test(seg) || regexTempoAgudo.test(seg);
+      const ePassado = regexPassado.test(seg) || regexTempoPassado.test(seg);
+
+      // Se for sinalizado como agudo OU se não trouxer nenhuma marcação explicita de passado
+      if (eAgudo || !ePassado) {
+        temAgudo = true;
+      } else {
+        temPrevio = true;
       }
-
-      return temPrevio ? 'AVC Prévio/Histórico' : 'Outros/Sem AVC';
     }
-    
+  }
+
+  // Regra de hierarquia: qualquer evento agudo suplanta o histórico prévio
+  if (temAgudo) return 'AVC Agudo/Atual';
+  if (temPrevio) return 'AVC Prévio/Histórico';
+
+  return 'Outros/Sem AVC';
+}
+
     function alternarDropdown() {
       document.getElementById('dropdown-list').classList.toggle('show');
     }
