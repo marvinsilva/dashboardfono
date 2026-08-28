@@ -589,8 +589,7 @@ const ANONIMIZAR_CONSULTORES = true;
       const texto = String(textoResposta).toUpperCase();
       return /\b(TRAQUEOSTOMIA|TQT|C[AÂ]NULA)\b/.test(texto);
     }
-
-    function classificarAVC(textoResposta) {
+function classificarAVC(textoResposta) {
   if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
 
   // 1. Limpeza e normalização básica
@@ -599,15 +598,15 @@ const ANONIMIZAR_CONSULTORES = true;
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
-  // 2. Termos diagnósticos (AVC, AVCI, AVCH, AVE, AVEI, AVEH, AIT, Ictus)
-  const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus)\b/i;
+  // 2. Termos diagnósticos (Inclusão de Síndrome Sensitivo-Motora como diagnóstico de AVC)
+  const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus|sindrome sensitivo[- ]motora)\b/i;
 
   if (!regexAVC.test(textoLimpo)) {
     return 'Outros/Sem AVC';
   }
 
   // 3. Regras temporais e contextuais
-  const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes|sindrome sensitivo-motora|sindrome sensitivo motora)\b/;
+  const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes)\b/;
   const regexTempoPassado = /(\(\s*\d{4}\s*\)|\b(em|de)\s+(19\d\d|20[0-2][0-6])\b|\bha\s+\d+\s+(anos|meses)\b)/;
 
   const regexAgudo = /\b(agudo|aguda|recente|recentes|subagudo|subaguda|atual|hda|novo|nova|recorrente|recorrencia)\b/;
@@ -623,7 +622,6 @@ const ANONIMIZAR_CONSULTORES = true;
       const eAgudo = regexAgudo.test(seg) || regexTempoAgudo.test(seg);
       const ePassado = regexPassado.test(seg) || regexTempoPassado.test(seg);
 
-      // Se for sinalizado como agudo OU se não trouxer nenhuma marcação explicita de passado
       if (eAgudo || !ePassado) {
         temAgudo = true;
       } else {
@@ -632,13 +630,12 @@ const ANONIMIZAR_CONSULTORES = true;
     }
   }
 
-  // Regra de hierarquia: qualquer evento agudo suplanta o histórico prévio
   if (temAgudo) return 'AVC Agudo/Atual';
   if (temPrevio) return 'AVC Prévio/Histórico';
 
   return 'Outros/Sem AVC';
 }
-
+  
     function alternarDropdown() {
       document.getElementById('dropdown-list').classList.toggle('show');
     }
