@@ -1340,7 +1340,7 @@
       document.getElementById('modal-exportar-pdf').style.display = 'none';
     }
 
-    // PROCESSAMENTO PDF COM LIMITE DE ALTURA (MÁXIMO 1/4 DA FOLHA A4)
+    // PROCESSAMENTO PDF COM LAYOUT EM 2 COLUNAS LADO A LADO
     async function processarPDFSelecionado() {
       const { jsPDF } = window.jspdf;
       const checkboxes = document.querySelectorAll('.chk-pdf-item');
@@ -1370,10 +1370,13 @@
       const margemRodape = 15;
       const espacamento = 6;
 
-      // Limite máximo de altura para cada bloco: no máximo 1/4 da folha útil (~67mm)
+      // Limite máximo de altura para cada bloco (~67mm)
       const maxAlturaBloco = (pdfAltura - margemTopo - margemRodape) / 4; 
+      const colWidth = (larguraUtil - espacamento) / 2; // Largura da coluna no layout duplo
 
       let posY = margemTopo;
+      let col = 0; // 0 = Esquerda, 1 = Direita
+      let rowMaxHeight = 0;
 
       try {
         for (let i = 0; i < blocosParaExportar.length; i++) {
@@ -1386,30 +1389,81 @@
           });
 
           const imgData = canvas.toDataURL('image/png');
-          
-          let larguraBloco = larguraUtil;
-          let alturaBloco = (canvas.height * larguraUtil) / canvas.width;
 
-          // Se a altura proporcional for maior do que 1/4 da folha, limita a altura e recalcula a largura
-          if (alturaBloco > maxAlturaBloco) {
-            alturaBloco = maxAlturaBloco;
-            larguraBloco = (canvas.width * alturaBloco) / canvas.height;
+          // Verifica proporção para saber se o bloco encaixa em 2 colunas
+          let testHeight = (canvas.height * larguraUtil) / canvas.width;
+          let testWidth = larguraUtil;
+
+          if (testHeight > maxAlturaBloco) {
+            testHeight = maxAlturaBloco;
+            testWidth = (canvas.width * testHeight) / canvas.height;
           }
 
-          // Centraliza horizontalmente o bloco se a largura for reduzida
-          const posX = margemX + (larguraUtil - larguraBloco) / 2;
+          // É compacto se couber na metade da largura da página
+          const isCompact = testWidth <= (colWidth + 5);
 
-          // Se o bloco ultrapassar o limite da página atual, pula para a próxima
-          if (posY + alturaBloco > (pdfAltura - margemRodape) && posY > margemTopo) {
-            pdf.addPage();
-            posY = margemTopo;
+          if (isCompact) {
+            let targetWidth = colWidth;
+            let targetHeight = (canvas.height * targetWidth) / canvas.width;
+            if (targetHeight > maxAlturaBloco) {
+              targetHeight = maxAlturaBloco;
+            }
+
+            if (col === 0) {
+              // Coluna da Esquerda
+              if (posY + targetHeight > (pdfAltura - margemRodape) && posY > margemTopo) {
+                pdf.addPage();
+                posY = margemTopo;
+              }
+
+              pdf.addImage(imgData, 'PNG', margemX, posY, targetWidth, targetHeight);
+              rowMaxHeight = targetHeight;
+              col = 1; // Próximo bloco vai para a coluna da direita
+            } else {
+              // Coluna da Direita
+              let posX = margemX + colWidth + espacamento;
+
+              if (posY + targetHeight > (pdfAltura - margemRodape)) {
+                pdf.addPage();
+                posY = margemTopo;
+                posX = margemX;
+                pdf.addImage(imgData, 'PNG', posX, posY, targetWidth, targetHeight);
+                rowMaxHeight = targetHeight;
+                col = 1;
+              } else {
+                pdf.addImage(imgData, 'PNG', posX, posY, targetWidth, targetHeight);
+                rowMaxHeight = Math.max(rowMaxHeight, targetHeight);
+                posY += rowMaxHeight + espacamento;
+                col = 0;
+                rowMaxHeight = 0;
+              }
+            }
+          } else {
+            // Bloco de Largura Total (Ex: KPIs, Linha do Tempo)
+            if (col === 1) {
+              // Avança a linha se havia item pendente na esquerda
+              posY += rowMaxHeight + espacamento;
+              col = 0;
+              rowMaxHeight = 0;
+            }
+
+            let targetWidth = larguraUtil;
+            let targetHeight = (canvas.height * larguraUtil) / canvas.width;
+            if (targetHeight > maxAlturaBloco) {
+              targetHeight = maxAlturaBloco;
+            }
+
+            if (posY + targetHeight > (pdfAltura - margemRodape) && posY > margemTopo) {
+              pdf.addPage();
+              posY = margemTopo;
+            }
+
+            pdf.addImage(imgData, 'PNG', margemX, posY, targetWidth, targetHeight);
+            posY += targetHeight + espacamento;
           }
-
-          pdf.addImage(imgData, 'PNG', posX, posY, larguraBloco, alturaBloco);
-          posY += alturaBloco + espacamento;
         }
 
-        // Rodapé com marca d'água em todas as páginas
+        // Rodapé com marca d'água
         const totalPaginas = pdf.internal.getNumberOfPages();
         for (let i = 1; i <= totalPaginas; i++) {
           pdf.setPage(i);
