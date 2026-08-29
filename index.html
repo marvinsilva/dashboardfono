@@ -7,6 +7,9 @@
   <title>Dashboard Fonoaudiologia - HCPA</title>
   
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
@@ -20,10 +23,12 @@
     h1 {
       color: #004085;
       margin: 0 0 8px 0;
+      font-size: 26px;
     }
     p.sub {
       color: #6c757d;
       margin: 0;
+      font-size: 14px;
     }
 
     /* Container de Filtros */
@@ -43,7 +48,7 @@
       flex-direction: column;
       position: relative;
       flex: 1;
-      min-width: 280px;
+      min-width: 260px;
     }
     .filter-label {
       font-weight: bold;
@@ -66,7 +71,6 @@
       justify-content: space-between;
       align-items: center;
       color: #333;
-      box-sizing: border-box;
     }
     .dropdown-btn:after {
       content: "▼";
@@ -88,7 +92,6 @@
       padding: 10px;
       z-index: 100;
       margin-top: 5px;
-      box-sizing: border-box;
     }
     .dropdown-content.show {
       display: block;
@@ -111,8 +114,7 @@
       font-family: inherit;
       outline: none;
       flex: 1;
-      min-width: 130px;
-      box-sizing: border-box;
+      min-width: 120px;
     }
     .date-picker:focus {
       border-color: #0056b3;
@@ -139,14 +141,14 @@
       background-color: #28a745;
       color: #ffffff;
       border: 1px solid #28a745;
-      padding: 6px 12px;
+      padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       transition: all 0.2s ease;
       white-space: nowrap;
-      height: 35px;
+      height: 40px;
     }
     .btn-export-pdf:hover {
       background-color: #218838;
@@ -158,7 +160,7 @@
       align-items: center;
       gap: 10px;
       background: #eef2f7;
-      padding: 10px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
       border: 1px dashed #0056b3;
     }
@@ -169,7 +171,6 @@
       margin-bottom: 8px;
       border: 1px solid #ced4da;
       border-radius: 4px;
-      box-sizing: border-box;
       font-size: 13px;
     }
 
@@ -198,7 +199,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     .kpi-card {
       background: #ffffff;
@@ -216,7 +217,7 @@
     }
     .kpi-card p {
       margin: 0;
-      font-size: 26px;
+      font-size: 24px;
       font-weight: bold;
       color: #1c1e21;
     }
@@ -322,10 +323,10 @@
 
   <div class="filter-container">
     <!-- Seleção / Carga do CSV -->
-    <div class="filter-group" style="max-width: 320px;">
+    <div class="filter-group" style="max-width: 300px;">
       <span class="filter-label">Carregar Arquivo CSV:</span>
       <div class="file-input-wrapper">
-        <input type="file" id="input-csv" accept=".csv" onchange="carregarCSVManual(event)" style="font-size: 13px;">
+        <input type="file" id="input-csv" accept=".csv" onchange="carregarCSVManual(event)" style="font-size: 13px; width: 100%;">
       </div>
     </div>
 
@@ -353,7 +354,7 @@
       <span class="filter-label">Filtrar por Período:</span>
       <div class="date-inputs">
         <input type="date" id="dt-inicio" class="date-picker" onchange="aplicarFiltro()" title="Data Inicial">
-        <span class="date-separator">até</span>
+        <span style="font-size: 13px; color: #6c757d;">até</span>
         <input type="date" id="dt-fim" class="date-picker" onchange="aplicarFiltro()" title="Data Final">
         <button type="button" class="btn-clear-date" onclick="limparFiltroDatas()" title="Limpar Período">Limpar</button>
       </div>
@@ -524,18 +525,14 @@
 
     let dadosBrutosCSV = [];
     let periodoSelecionado = 'TODOS';
-    
-    let instanciaGraficoBarras = null;
-    let instanciaGraficoPizza = null;
-    let instanciaGraficoLinhaTempo = null;
-    let instanciaGraficoNivel = null;
-    let instanciaGraficoSolicitantes = null; 
-    let instanciaGraficoEvolucaoFois = null;
-    let instanciaGraficoVias = null;
-    let instanciaGraficoDiaSemana = null;
-    let instanciaGraficoEspecialidades = null;
-    let instanciaGraficoEsperaUnidades = null;
-    let instanciaGraficoAVC = null;
+
+    // Função utilitária para limpar instâncias do Chart.js com segurança
+    function destruirGraficoSeExistir(idCanvas) {
+      const chartExistente = Chart.getChart(idCanvas);
+      if (chartExistente) {
+        chartExistente.destroy();
+      }
+    }
 
     function converterParaNumero(valor) {
       if (!valor) return NaN;
@@ -563,6 +560,7 @@
     }
 
     function formatarDataExibicao(dataISO) {
+      if (!dataISO) return '';
       const partes = dataISO.split('-');
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
@@ -1099,9 +1097,9 @@
 
     // FUNÇÕES DE RENDERIZAÇÃO DOS GRÁFICOS
     function renderizarGraficoLinhaTempo(labelsDatas, dadosSolicitados, dadosAtendidos) {
-      if (instanciaGraficoLinhaTempo) instanciaGraficoLinhaTempo.destroy();
+      destruirGraficoSeExistir('graficoLinhaTempo');
       const ctx = document.getElementById('graficoLinhaTempo').getContext('2d');
-      instanciaGraficoLinhaTempo = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'line',
         data: {
           labels: labelsDatas,
@@ -1115,9 +1113,9 @@
     }
 
     function renderizarGraficoEvolucaoFois(entrada, saida) {
-      if (instanciaGraficoEvolucaoFois) instanciaGraficoEvolucaoFois.destroy();
+      destruirGraficoSeExistir('graficoEvolucaoFois');
       const ctx = document.getElementById('graficoEvolucaoFois').getContext('2d');
-      instanciaGraficoEvolucaoFois = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: ['FOIS 1-3', 'FOIS 4', 'FOIS 5-7'],
@@ -1131,9 +1129,9 @@
     }
 
     function renderizarGraficoDiaSemana(dias, contagemObj) {
-      if (instanciaGraficoDiaSemana) instanciaGraficoDiaSemana.destroy();
+      destruirGraficoSeExistir('graficoDiaSemana');
       const ctx = document.getElementById('graficoDiaSemana').getContext('2d');
-      instanciaGraficoDiaSemana = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: dias,
@@ -1144,17 +1142,12 @@
     }
 
     function renderizarGraficoBarraHorizontal(idCanvas, rotulos, dados, cor) {
-      if (idCanvas === 'graficoEspecialidades' && instanciaGraficoEspecialidades) {
-        instanciaGraficoEspecialidades.destroy();
-      } else if (idCanvas === 'graficoEsperaUnidades' && instanciaGraficoEsperaUnidades) {
-        instanciaGraficoEsperaUnidades.destroy();
-      }
-
+      destruirGraficoSeExistir(idCanvas);
       const canvas = document.getElementById(idCanvas);
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
 
-      const novoGrafico = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: rotulos,
@@ -1167,18 +1160,12 @@
           scales: { x: { beginAtZero: true } }
         }
       });
-
-      if (idCanvas === 'graficoEspecialidades') {
-        instanciaGraficoEspecialidades = novoGrafico;
-      } else if (idCanvas === 'graficoEsperaUnidades') {
-        instanciaGraficoEsperaUnidades = novoGrafico;
-      }
     }
 
     function renderizarGraficoNivelAssistencial(dadosNiveis) {
-      if (instanciaGraficoNivel) instanciaGraficoNivel.destroy();
+      destruirGraficoSeExistir('graficoNivelAssistencial');
       const ctx = document.getElementById('graficoNivelAssistencial').getContext('2d');
-      instanciaGraficoNivel = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: ['Alto', 'Médio', 'Baixo', 'Não Informado'],
@@ -1203,12 +1190,12 @@
     }
 
     function renderizarGraficoBarras(idCanvas, rotulos, dados, legenda) {
-      if (instanciaGraficoBarras) instanciaGraficoBarras.destroy();
+      destruirGraficoSeExistir(idCanvas);
       const alturaIdeal = Math.max(300, rotulos.length * 28);
       document.getElementById('wrapperGraficoConsultores').style.height = alturaIdeal + "px";
 
       const ctx = document.getElementById(idCanvas).getContext('2d');
-      instanciaGraficoBarras = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'bar',
         data: {
           labels: rotulos,
@@ -1223,11 +1210,9 @@
     }
 
     function renderizarGraficoPizza(idCanvas, rotulos, dados) {
-      const map = { 'graficoTurnos': instanciaGraficoPizza, 'graficoViasAlimentacao': instanciaGraficoVias };
-      if (map[idCanvas]) map[idCanvas].destroy();
-
+      destruirGraficoSeExistir(idCanvas);
       const ctx = document.getElementById(idCanvas).getContext('2d');
-      const novoChart = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: rotulos,
@@ -1248,14 +1233,12 @@
           }
         }
       });
-      if (idCanvas === 'graficoTurnos') instanciaGraficoPizza = novoChart;
-      if (idCanvas === 'graficoViasAlimentacao') instanciaGraficoVias = novoChart;
     }
 
     function renderizarGraficoSolicitantes(rotulos, dados) {
-      if (instanciaGraficoSolicitantes) instanciaGraficoSolicitantes.destroy();
+      destruirGraficoSeExistir('graficoSolicitantes');
       const ctx = document.getElementById('graficoSolicitantes').getContext('2d');
-      instanciaGraficoSolicitantes = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: rotulos,
@@ -1279,10 +1262,9 @@
     }
 
     function renderizarGraficoAVC(rotulos, dados) {
-      if (instanciaGraficoAVC) instanciaGraficoAVC.destroy();
-
+      destruirGraficoSeExistir('graficoAVC');
       const ctx = document.getElementById('graficoAVC').getContext('2d');
-      instanciaGraficoAVC = new Chart(ctx, {
+      new Chart(ctx, {
         type: 'doughnut',
         data: {
           labels: rotulos,
@@ -1370,9 +1352,8 @@
       const margemRodape = 15;
       const espacamento = 6;
 
-      // Limite máximo de altura para cada bloco (~67mm)
-      const maxAlturaBloco = (pdfAltura - margemTopo - margemRodape) / 4; 
-      const colWidth = (larguraUtil - espacamento) / 2; // Largura da coluna no layout duplo
+      const maxAlturaBloco = (pdfAltura - margemTopo - margemRodape) / 3.5; 
+      const colWidth = (larguraUtil - espacamento) / 2;
 
       let posY = margemTopo;
       let col = 0; // 0 = Esquerda, 1 = Direita
@@ -1390,17 +1371,8 @@
 
           const imgData = canvas.toDataURL('image/png');
 
-          // Verifica proporção para saber se o bloco encaixa em 2 colunas
-          let testHeight = (canvas.height * larguraUtil) / canvas.width;
-          let testWidth = larguraUtil;
-
-          if (testHeight > maxAlturaBloco) {
-            testHeight = maxAlturaBloco;
-            testWidth = (canvas.width * testHeight) / canvas.height;
-          }
-
-          // É compacto se couber na metade da largura da página
-          const isCompact = testWidth <= (colWidth + 5);
+          // Identifica se é um bloco compacto de grid ou de largura total pelo tipo de classe
+          const isCompact = bloco.classList.contains('chart-card');
 
           if (isCompact) {
             let targetWidth = colWidth;
@@ -1410,7 +1382,6 @@
             }
 
             if (col === 0) {
-              // Coluna da Esquerda
               if (posY + targetHeight > (pdfAltura - margemRodape) && posY > margemTopo) {
                 pdf.addPage();
                 posY = margemTopo;
@@ -1418,9 +1389,8 @@
 
               pdf.addImage(imgData, 'PNG', margemX, posY, targetWidth, targetHeight);
               rowMaxHeight = targetHeight;
-              col = 1; // Próximo bloco vai para a coluna da direita
+              col = 1;
             } else {
-              // Coluna da Direita
               let posX = margemX + colWidth + espacamento;
 
               if (posY + targetHeight > (pdfAltura - margemRodape)) {
@@ -1439,9 +1409,7 @@
               }
             }
           } else {
-            // Bloco de Largura Total (Ex: KPIs, Linha do Tempo)
             if (col === 1) {
-              // Avança a linha se havia item pendente na esquerda
               posY += rowMaxHeight + espacamento;
               col = 0;
               rowMaxHeight = 0;
@@ -1463,7 +1431,6 @@
           }
         }
 
-        // Rodapé com marca d'água
         const totalPaginas = pdf.internal.getNumberOfPages();
         for (let i = 1; i <= totalPaginas; i++) {
           pdf.setPage(i);
