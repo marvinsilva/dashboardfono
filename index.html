@@ -1340,7 +1340,7 @@
       document.getElementById('modal-exportar-pdf').style.display = 'none';
     }
 
-    // PROCESSAMENTO PDF SEM CORTAR ELEMENTOS
+    // PROCESSAMENTO PDF COM LIMITE DE ALTURA (MÁXIMO 1/4 DA FOLHA A4)
     async function processarPDFSelecionado() {
       const { jsPDF } = window.jspdf;
       const checkboxes = document.querySelectorAll('.chk-pdf-item');
@@ -1368,7 +1368,10 @@
       const larguraUtil = pdfLargura - (margemX * 2);
       const margemTopo = 12;
       const margemRodape = 15;
-      const espacamento = 8;
+      const espacamento = 6;
+
+      // Limite máximo de altura para cada bloco: no máximo 1/4 da folha útil (~67mm)
+      const maxAlturaBloco = (pdfAltura - margemTopo - margemRodape) / 4; 
 
       let posY = margemTopo;
 
@@ -1383,15 +1386,26 @@
           });
 
           const imgData = canvas.toDataURL('image/png');
-          const alturaBloco = (canvas.height * larguraUtil) / canvas.width;
+          
+          let larguraBloco = larguraUtil;
+          let alturaBloco = (canvas.height * larguraUtil) / canvas.width;
 
-          // Se o bloco ultrapassar o limite da página, cria nova página
+          // Se a altura proporcional for maior do que 1/4 da folha, limita a altura e recalcula a largura
+          if (alturaBloco > maxAlturaBloco) {
+            alturaBloco = maxAlturaBloco;
+            larguraBloco = (canvas.width * alturaBloco) / canvas.height;
+          }
+
+          // Centraliza horizontalmente o bloco se a largura for reduzida
+          const posX = margemX + (larguraUtil - larguraBloco) / 2;
+
+          // Se o bloco ultrapassar o limite da página atual, pula para a próxima
           if (posY + alturaBloco > (pdfAltura - margemRodape) && posY > margemTopo) {
             pdf.addPage();
             posY = margemTopo;
           }
 
-          pdf.addImage(imgData, 'PNG', margemX, posY, larguraUtil, alturaBloco);
+          pdf.addImage(imgData, 'PNG', posX, posY, larguraBloco, alturaBloco);
           posY += alturaBloco + espacamento;
         }
 
