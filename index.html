@@ -359,7 +359,7 @@
       </div>
     </div>
 
-    <!-- Botão de Exportação para PDF (Tamanho reduzido) -->
+    <!-- Botão Exportar PDF -->
     <div class="filter-group" style="min-width: auto; flex: initial;">
       <button type="button" class="btn-export-pdf" onclick="abrirModalPDF()" title="Exportar Relatório PDF">
         📄 PDF
@@ -406,7 +406,7 @@
 
     <div class="kpi-card" style="border-left-color: #6f42c1;">
       <h3>Evolução Média (Δ)</h3>
-      <div style="display: flex; justify-space-around; align-items: center; margin-top: 4px;">
+      <div style="display: flex; justify-content: space-around; align-items: center; margin-top: 4px;">
         <div style="text-align: center;">
           <span style="font-size: 10px; font-weight: 700; color: #6c757d; display: block;">FOIS</span>
           <p id="kpi-delta-fois" style="font-size: 20px;">-</p>
@@ -510,7 +510,6 @@
     </div>
   </div>
 
-  <!-- Marca d'água / Rodapé Discreto no Site -->
   <footer>
     Dashboard Desenvolvido por Fgo Marvin Azevedo
   </footer>
@@ -526,7 +525,6 @@
     let dadosBrutosCSV = [];
     let periodoSelecionado = 'TODOS';
     
-    // Instâncias de Gráficos
     let instanciaGraficoBarras = null;
     let instanciaGraficoPizza = null;
     let instanciaGraficoLinhaTempo = null;
@@ -1311,7 +1309,7 @@
       });
     }
 
-    // FUNÇÕES DE EXPORTAÇÃO PDF DINÂMICA
+    // MODAL PDF
     function abrirModalPDF() {
       const container = document.getElementById('container-checkboxes-pdf');
       container.innerHTML = '';
@@ -1342,6 +1340,7 @@
       document.getElementById('modal-exportar-pdf').style.display = 'none';
     }
 
+    // PROCESSAMENTO PDF SEM CORTAR ELEMENTOS
     async function processarPDFSelecionado() {
       const { jsPDF } = window.jspdf;
       const checkboxes = document.querySelectorAll('.chk-pdf-item');
@@ -1349,59 +1348,60 @@
       
       fecharModalPDF();
 
-      const elementosOcultados = [];
-
-      const uiFiltros = document.querySelectorAll('header, .filter-container');
-      uiFiltros.forEach(el => {
-        el.dataset.displayOriginal = el.style.display;
-        el.style.display = 'none';
-        elementosOcultados.push(el);
-      });
-
+      const blocosParaExportar = [];
       checkboxes.forEach((chk, index) => {
-        if (!chk.checked) {
-          const bloco = blocos[index];
-          bloco.dataset.displayOriginal = bloco.style.display;
-          bloco.style.display = 'none';
-          elementosOcultados.push(bloco);
+        if (chk.checked) {
+          blocosParaExportar.push(blocos[index]);
         }
       });
+
+      if (blocosParaExportar.length === 0) {
+        alert("Selecione ao menos um bloco para exportar.");
+        return;
+      }
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfLargura = pdf.internal.pageSize.getWidth();
+      const pdfAltura = pdf.internal.pageSize.getHeight();
+      
+      const margemX = 10;
+      const larguraUtil = pdfLargura - (margemX * 2);
+      const margemTopo = 12;
+      const margemRodape = 15;
+      const espacamento = 8;
+
+      let posY = margemTopo;
 
       try {
-        const canvas = await html2canvas(document.body, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#f0f2f5'
-        });
+        for (let i = 0; i < blocosParaExportar.length; i++) {
+          const bloco = blocosParaExportar[i];
 
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        const pdfLargura = pdf.internal.pageSize.getWidth();
-        const pdfAlturaPagina = pdf.internal.pageSize.getHeight();
-        const imgLargura = pdfLargura;
-        const imgAltura = (canvas.height * pdfLargura) / canvas.width;
-        
-        let alturaRestante = imgAltura;
-        let posicaoY = 0;
+          const canvas = await html2canvas(bloco, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
 
-        pdf.addImage(imgData, 'PNG', 0, posicaoY, imgLargura, imgAltura);
-        alturaRestante -= pdfAlturaPagina;
+          const imgData = canvas.toDataURL('image/png');
+          const alturaBloco = (canvas.height * larguraUtil) / canvas.width;
 
-        while (alturaRestante > 0) {
-          posicaoY = alturaRestante - imgAltura;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, posicaoY, imgLargura, imgAltura);
-          alturaRestante -= pdfAlturaPagina;
+          // Se o bloco ultrapassar o limite da página, cria nova página
+          if (posY + alturaBloco > (pdfAltura - margemRodape) && posY > margemTopo) {
+            pdf.addPage();
+            posY = margemTopo;
+          }
+
+          pdf.addImage(imgData, 'PNG', margemX, posY, larguraUtil, alturaBloco);
+          posY += alturaBloco + espacamento;
         }
 
-        // Adiciona a marca d'água no rodapé de todas as páginas do PDF gerado
+        // Rodapé com marca d'água em todas as páginas
         const totalPaginas = pdf.internal.getNumberOfPages();
         for (let i = 1; i <= totalPaginas; i++) {
           pdf.setPage(i);
           pdf.setFontSize(8);
           pdf.setTextColor(140, 140, 140);
-          pdf.text('Dashboard Desenvolvido por Fgo Marvin Azevedo', pdfLargura / 2, pdfAlturaPagina - 5, { align: 'center' });
+          pdf.text('Dashboard Desenvolvido por Fgo Marvin Azevedo', pdfLargura / 2, pdfAltura - 6, { align: 'center' });
         }
 
         const dataHoje = new Date().toISOString().split('T')[0];
@@ -1409,10 +1409,6 @@
 
       } catch (erro) {
         alert("Erro ao gerar o PDF: " + erro);
-      } finally {
-        elementosOcultados.forEach(el => {
-          el.style.display = el.dataset.displayOriginal || '';
-        });
       }
     }
 
