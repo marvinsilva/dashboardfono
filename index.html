@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Fonoaudiologia - HCPA</title>
   
-  
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -285,6 +284,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  
+  <!-- Bibliotecas para Gerar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -331,10 +334,17 @@
         <button type="button" class="btn-clear-date" onclick="limparFiltroDatas()" title="Limpar Período">Limpar</button>
       </div>
     </div>
+
+    <!-- Botão de Exportação para PDF -->
+    <div class="filter-group" style="max-width: 160px; justify-content: flex-end;">
+      <button type="button" class="btn-clear-date" onclick="abrirModalPDF()" style="background-color: #28a745; color: #fff; border-color: #28a745; width: 100%; height: 38px;">
+        📄 Exportar PDF
+      </button>
+    </div>
   </div>
 
   <!-- Grid de Cards de KPI Ampliado -->
-  <div class="kpi-grid">
+  <div class="kpi-grid pdf-block" data-pdf-nome="Resumo de Indicadores (KPIs)">
     <div class="kpi-card">
       <h3>Pacientes Únicos</h3>
       <p id="kpi-total-unicos">-</p>
@@ -386,7 +396,7 @@
     </div>
   </div>
 
-  <div class="timeline-card">
+  <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Solicitadas vs. Atendidas)">
     <div class="timeline-header">
       <h2 style="margin: 0;">Linha do tempo: Consultorias Solicitadas vs. Atendimentos Realizados</h2>
       <div class="time-buttons">
@@ -404,7 +414,7 @@
     </div>
   </div>
 
-  <div class="full-width-card">
+  <div class="full-width-card pdf-block" data-pdf-nome="Gráfico: Atendimentos por Consultor">
     <h2>Atendimentos por Consultor</h2>
     <div class="scroll-area-y">
       <div id="wrapperGraficoConsultores" style="position: relative; width: 100%;">
@@ -415,49 +425,64 @@
 
   <!-- Gráficos Gerenciais e Clínicos -->
   <div class="charts-grid">
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Evolução FOIS">
       <h2>Evolução FOIS: Entrada vs. Saída</h2>
       <canvas id="graficoEvolucaoFois"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Via de Alimentação Predominante">
       <h2>Via de Alimentação Predominante</h2>
       <canvas id="graficoViasAlimentacao"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Demanda por Dia da Semana">
       <h2>Demanda por Dia da Semana</h2>
       <canvas id="graficoDiaSemana"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Especialidades Solicitantes">
       <h2>Especialidades Solicitantes</h2>
       <canvas id="graficoEspecialidades"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Maior Tempo de Espera por Unidade">
       <h2>Unidades com Maior Tempo de Espera (h)</h2>
       <canvas id="graficoEsperaUnidades"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Perfil do Solicitante">
       <h2>Perfil do Solicitante</h2>
       <canvas id="graficoSolicitantes"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Nível Assistencial">
       <h2>Nível Assistencial</h2>
       <canvas id="graficoNivelAssistencial"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Prevalência de AVC">
       <h2>Prevalência de AVC</h2>
       <canvas id="graficoAVC"></canvas>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Distribuição por Turno">
       <h2>Distribuição por Turno</h2>
       <canvas id="graficoTurnos"></canvas>
+    </div>
+  </div>
+
+  <!-- Modal de Seleção para Exportação em PDF -->
+  <div id="modal-exportar-pdf" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: #fff; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0; color: #004085;">Selecione os blocos para o PDF</h3>
+      <p style="font-size: 13px; color: #6c757d;">Marque apenas as informações que deseja incluir no relatório:</p>
+      
+      <div id="container-checkboxes-pdf" style="display: flex; flex-direction: column; gap: 8px; margin: 15px 0;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="time-btn" onclick="fecharModalPDF()">Cancelar</button>
+        <button type="button" class="btn-clear-date" onclick="processarPDFSelecionado()" style="background-color: #28a745; color: #fff; border-color: #28a745;">Gerar PDF</button>
+      </div>
     </div>
   </div>
 
@@ -467,9 +492,7 @@
     }
 
     const NOME_ARQUIVO_CSV = "DADOS.csv";
-    
-// Altere para false quando quiser exibir os nomes originais novamente
-const ANONIMIZAR_CONSULTORES = true;
+    const ANONIMIZAR_CONSULTORES = true;
 
     let dadosBrutosCSV = [];
     let periodoSelecionado = 'TODOS';
@@ -540,7 +563,6 @@ const ANONIMIZAR_CONSULTORES = true;
       }
     }
 
-    // EXTRAÇÕES VIA REGEX
     function extrairNivelAssistencial(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
       const textoLimpo = String(textoResposta)
@@ -589,52 +611,49 @@ const ANONIMIZAR_CONSULTORES = true;
       const texto = String(textoResposta).toUpperCase();
       return /\b(TRAQUEOSTOMIA|TQT|C[AÂ]NULA)\b/.test(texto);
     }
-function classificarAVC(textoResposta) {
-  if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
 
-  // 1. Limpeza e normalização básica
-  const textoLimpo = String(textoResposta)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+    function classificarAVC(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
 
-  // 2. Termos diagnósticos (Inclusão de Síndrome Sensitivo-Motora como diagnóstico de AVC)
-  const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus|sindrome sensitivo[- ]motora)\b/i;
+      const textoLimpo = String(textoResposta)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
 
-  if (!regexAVC.test(textoLimpo)) {
-    return 'Outros/Sem AVC';
-  }
+      const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus|sindrome sensitivo[- ]motora)\b/i;
 
-  // 3. Regras temporais e contextuais
-  const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes)\b/;
-  const regexTempoPassado = /(\(\s*\d{4}\s*\)|\b(em|de)\s+(19\d\d|20[0-2][0-6])\b|\bha\s+\d+\s+(anos|meses)\b)/;
-
-  const regexAgudo = /\b(agudo|aguda|recente|recentes|subagudo|subaguda|atual|hda|novo|nova|recorrente|recorrencia)\b/;
-  const regexTempoAgudo = /\bha\s+\d+\s+(dias|horas)\b/;
-
-  // 4. Análise segmento por segmento
-  const segmentos = textoLimpo.split(/[.;\n,\/]/);
-  let temAgudo = false;
-  let temPrevio = false;
-
-  for (const seg of segmentos) {
-    if (regexAVC.test(seg)) {
-      const eAgudo = regexAgudo.test(seg) || regexTempoAgudo.test(seg);
-      const ePassado = regexPassado.test(seg) || regexTempoPassado.test(seg);
-
-      if (eAgudo || !ePassado) {
-        temAgudo = true;
-      } else {
-        temPrevio = true;
+      if (!regexAVC.test(textoLimpo)) {
+        return 'Outros/Sem AVC';
       }
+
+      const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes)\b/;
+      const regexTempoPassado = /(\(\s*\d{4}\s*\)|\b(em|de)\s+(19\d\d|20[0-2][0-6])\b|\bha\s+\d+\s+(anos|meses)\b)/;
+
+      const regexAgudo = /\b(agudo|aguda|recente|recentes|subagudo|subaguda|atual|hda|novo|nova|recorrente|recorrencia)\b/;
+      const regexTempoAgudo = /\bha\s+\d+\s+(dias|horas)\b/;
+
+      const segmentos = textoLimpo.split(/[.;\n,\/]/);
+      let temAgudo = false;
+      let temPrevio = false;
+
+      for (const seg of segmentos) {
+        if (regexAVC.test(seg)) {
+          const eAgudo = regexAgudo.test(seg) || regexTempoAgudo.test(seg);
+          const ePassado = regexPassado.test(seg) || regexTempoPassado.test(seg);
+
+          if (eAgudo || !ePassado) {
+            temAgudo = true;
+          } else {
+            temPrevio = true;
+          }
+        }
+      }
+
+      if (temAgudo) return 'AVC Agudo/Atual';
+      if (temPrevio) return 'AVC Prévio/Histórico';
+
+      return 'Outros/Sem AVC';
     }
-  }
-
-  if (temAgudo) return 'AVC Agudo/Atual';
-  if (temPrevio) return 'AVC Prévio/Histórico';
-
-  return 'Outros/Sem AVC';
-}
   
     function alternarDropdown() {
       document.getElementById('dropdown-list').classList.toggle('show');
@@ -816,252 +835,240 @@ function classificarAVC(textoResposta) {
     }
 
     function processarDadosCSV(linhas) {
-  const idsProcessados = new Set();
-  const consultores = {};
-  
-  // Dicionário e contador para a anonimização dos fonoaudiólogos
-  const mapaConsultores = {};
-  let contadorConsultor = 1;
+      const idsProcessados = new Set();
+      const consultores = {};
+      
+      const mapaConsultores = {};
+      let contadorConsultor = 1;
 
-  const turnos = { 
-    'Manhã (07h-12h59)': 0, 
-    'Tarde (13h-18h59)': 0, 
-    'Noite (19h-06h59)': 0 
-  };
+      const turnos = { 
+        'Manhã (07h-12h59)': 0, 
+        'Tarde (13h-18h59)': 0, 
+        'Noite (19h-06h59)': 0 
+      };
 
-  const niveisAssistenciais = { 'Alto': 0, 'Médio': 0, 'Baixo': 0, 'Não Informado': 0 };
-  const solicitantes = { 'Médicos': 0, 'Enfermeiros': 0, 'Outros/Não Info': 0 };
-  const viasAlimentacao = {};
-  const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
-  const especialidades = {};
-  const tempoEsperaPorUnidade = {};
-  const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
+      const niveisAssistenciais = { 'Alto': 0, 'Médio': 0, 'Baixo': 0, 'Não Informado': 0 };
+      const solicitantes = { 'Médicos': 0, 'Enfermeiros': 0, 'Outros/Não Info': 0 };
+      const viasAlimentacao = {};
+      const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
+      const especialidades = {};
+      const tempoEsperaPorUnidade = {};
+      const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
 
-  let somaEspera = 0;
-  let qtdEsperaValida = 0;
-  let qtdSla24h = 0;
-  let qtdComTQT = 0;
+      let somaEspera = 0;
+      let qtdEsperaValida = 0;
+      let qtdSla24h = 0;
+      let qtdComTQT = 0;
 
-  const contagemSolicitacoesPorDia = {};
-  const contagemRespostasPorDia = {};
-  const conjuntoTodasDatas = new Set();
-  const historicoPacientes = {};
+      const contagemSolicitacoesPorDia = {};
+      const contagemRespostasPorDia = {};
+      const conjuntoTodasDatas = new Set();
+      const historicoPacientes = {};
 
-  linhas.forEach(linha => {
-    const idAtendimento = linha['NOME_PACIENTE'];
-    const consultor     = linha['CONSULTOR'];
-    const textoResposta = linha['RESPOSTA'];
-    const conselho      = linha['CONSELHO_SOLIC'];
-    const localAtend    = linha['LOCAL_ATEND'];
-    const espAtend      = linha['ESP_ATENDIMENTO'] || linha['SIGLA_ESPECIALIDADE_ATENDIMENTO'];
-    const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
-    const tempoEspera   = converterParaNumero(valorTempo);
-    
-    const rawSolic      = linha['SOLIC_CONSULTORIA'];
-    const rawResp       = linha['DTHR_RESPOSTA'];
-    const dataSolic     = extrairDataISO(rawSolic);
-    const dataResp      = extrairDataISO(rawResp);
+      linhas.forEach(linha => {
+        const idAtendimento = linha['NOME_PACIENTE'];
+        const consultor     = linha['CONSULTOR'];
+        const textoResposta = linha['RESPOSTA'];
+        const conselho      = linha['CONSELHO_SOLIC'];
+        const localAtend    = linha['LOCAL_ATEND'];
+        const espAtend      = linha['ESP_ATENDIMENTO'] || linha['SIGLA_ESPECIALIDADE_ATENDIMENTO'];
+        const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
+        const tempoEspera   = converterParaNumero(valorTempo);
+        
+        const rawSolic      = linha['SOLIC_CONSULTORIA'];
+        const rawResp       = linha['DTHR_RESPOSTA'];
+        const dataSolic     = extrairDataISO(rawSolic);
+        const dataResp      = extrairDataISO(rawResp);
 
-    const dataHoraRef = rawSolic || rawResp;
-    const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
+        const dataHoraRef = rawSolic || rawResp;
+        const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
 
-    if (turnos[nomeTurno] !== undefined) {
-      turnos[nomeTurno]++;
-    } else {
-      turnos['Outros/Não Info'] = (turnos['Outros/Não Info'] || 0) + 1;
-    }
-
-    // Extrações de Texto/Regex
-    const nivel = extrairNivelAssistencial(textoResposta);
-    const via = extrairViaAlimentacao(textoResposta);
-    const temTQT = verificarTraqueostomia(textoResposta);
-    const statusAVC = classificarAVC(textoResposta);
-
-    niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
-    viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
-    if (temTQT) qtdComTQT++;
-    dadosAVC[statusAVC]++;
-
-    // Conselho Solicitante
-    if (conselho && typeof conselho === 'string') {
-      const cUpper = conselho.toUpperCase();
-      if (cUpper.includes('CREMERS')) solicitantes['Médicos']++;
-      else if (cUpper.includes('COREN')) solicitantes['Enfermeiros']++;
-      else solicitantes['Outros/Não Info']++;
-    } else {
-      solicitantes['Outros/Não Info']++;
-    }
-
-    // Especialidade Solicitante
-    if (espAtend && String(espAtend).trim() !== '') {
-      const espNome = String(espAtend).trim();
-      especialidades[espNome] = (especialidades[espNome] || 0) + 1;
-    }
-
-    // Dias da Semana
-    if (dataSolic) {
-      contagemSolicitacoesPorDia[dataSolic] = (contagemSolicitacoesPorDia[dataSolic] || 0) + 1;
-      conjuntoTodasDatas.add(dataSolic);
-
-      const dataObj = new Date(dataSolic + "T00:00:00");
-      const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-      const nomeDia = nomesDias[dataObj.getDay()];
-      if (diasSemana[nomeDia] !== undefined) diasSemana[nomeDia]++;
-    }
-
-    if (dataResp) {
-      contagemRespostasPorDia[dataResp] = (contagemRespostasPorDia[dataResp] || 0) + 1;
-      conjuntoTodasDatas.add(dataResp);
-    }
-    
-    if (!idAtendimento || String(idAtendimento).trim() === '') return;
-    const idPac = String(idAtendimento).trim();
-    idsProcessados.add(idPac);
-
-    const dataRef = dataResp || dataSolic;
-    if (dataRef) {
-      if (!historicoPacientes[idPac]) historicoPacientes[idPac] = [];
-      historicoPacientes[idPac].push({
-        data: new Date(dataRef + "T00:00:00"),
-        fois: extrairNotaEscala(textoResposta, 'FOIS'),
-        asha: extrairNotaEscala(textoResposta, 'ASHA')
-      });
-    }
-
-    // Processamento com suporte à anonimização
-    if (consultor && String(consultor).trim() !== '') {
-      let nomeConsultor = String(consultor).trim();
-
-      if (typeof ANONIMIZAR_CONSULTORES !== 'undefined' && ANONIMIZAR_CONSULTORES) {
-        if (!mapaConsultores[nomeConsultor]) {
-          mapaConsultores[nomeConsultor] = `Fonoaudiólogo ${contadorConsultor++}`;
+        if (turnos[nomeTurno] !== undefined) {
+          turnos[nomeTurno]++;
+        } else {
+          turnos['Outros/Não Info'] = (turnos['Outros/Não Info'] || 0) + 1;
         }
-        nomeConsultor = mapaConsultores[nomeConsultor];
+
+        const nivel = extrairNivelAssistencial(textoResposta);
+        const via = extrairViaAlimentacao(textoResposta);
+        const temTQT = verificarTraqueostomia(textoResposta);
+        const statusAVC = classificarAVC(textoResposta);
+
+        niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
+        viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
+        if (temTQT) qtdComTQT++;
+        dadosAVC[statusAVC]++;
+
+        if (conselho && typeof conselho === 'string') {
+          const cUpper = conselho.toUpperCase();
+          if (cUpper.includes('CREMERS')) solicitantes['Médicos']++;
+          else if (cUpper.includes('COREN')) solicitantes['Enfermeiros']++;
+          else solicitantes['Outros/Não Info']++;
+        } else {
+          solicitantes['Outros/Não Info']++;
+        }
+
+        if (espAtend && String(espAtend).trim() !== '') {
+          const espNome = String(espAtend).trim();
+          especialidades[espNome] = (especialidades[espNome] || 0) + 1;
+        }
+
+        if (dataSolic) {
+          contagemSolicitacoesPorDia[dataSolic] = (contagemSolicitacoesPorDia[dataSolic] || 0) + 1;
+          conjuntoTodasDatas.add(dataSolic);
+
+          const dataObj = new Date(dataSolic + "T00:00:00");
+          const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          const nomeDia = nomesDias[dataObj.getDay()];
+          if (diasSemana[nomeDia] !== undefined) diasSemana[nomeDia]++;
+        }
+
+        if (dataResp) {
+          contagemRespostasPorDia[dataResp] = (contagemRespostasPorDia[dataResp] || 0) + 1;
+          conjuntoTodasDatas.add(dataResp);
+        }
+        
+        if (!idAtendimento || String(idAtendimento).trim() === '') return;
+        const idPac = String(idAtendimento).trim();
+        idsProcessados.add(idPac);
+
+        const dataRef = dataResp || dataSolic;
+        if (dataRef) {
+          if (!historicoPacientes[idPac]) historicoPacientes[idPac] = [];
+          historicoPacientes[idPac].push({
+            data: new Date(dataRef + "T00:00:00"),
+            fois: extrairNotaEscala(textoResposta, 'FOIS'),
+            asha: extrairNotaEscala(textoResposta, 'ASHA')
+          });
+        }
+
+        if (consultor && String(consultor).trim() !== '') {
+          let nomeConsultor = String(consultor).trim();
+
+          if (typeof ANONIMIZAR_CONSULTORES !== 'undefined' && ANONIMIZAR_CONSULTORES) {
+            if (!mapaConsultores[nomeConsultor]) {
+              mapaConsultores[nomeConsultor] = `Fonoaudiólogo ${contadorConsultor++}`;
+            }
+            nomeConsultor = mapaConsultores[nomeConsultor];
+          }
+
+          consultores[nomeConsultor] = (consultores[nomeConsultor] || 0) + 1;
+        }
+
+        if (!isNaN(tempoEspera)) {
+          somaEspera += tempoEspera;
+          qtdEsperaValida++;
+          if (tempoEspera <= 24) qtdSla24h++;
+
+          if (localAtend && String(localAtend).trim() !== '') {
+            const loc = String(localAtend).trim();
+            if (!tempoEsperaPorUnidade[loc]) tempoEsperaPorUnidade[loc] = { soma: 0, count: 0 };
+            tempoEsperaPorUnidade[loc].soma += tempoEspera;
+            tempoEsperaPorUnidade[loc].count++;
+          }
+        }
+      });
+
+      const deltasFOIS = [];
+      const deltasASHA = [];
+      let pacientesEvoluiramPositivo = 0;
+      let totalPacientesComFOISMultiplo = 0;
+
+      const entradaFOIS = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
+      const saidaFOIS   = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
+
+      Object.values(historicoPacientes).forEach(registros => {
+        registros.sort((a, b) => a.data - b.data);
+
+        const comFOIS = registros.filter(r => r.fois !== null);
+        if (comFOIS.length > 0) {
+          const primeiroFOIS = comFOIS[0].fois;
+          const ultimoFOIS = comFOIS[comFOIS.length - 1].fois;
+
+          const classificarFaixa = (n) => n <= 3 ? 'Nível 1-3' : (n === 4 ? 'Nível 4' : 'Nível 5-7');
+          entradaFOIS[classificarFaixa(primeiroFOIS)]++;
+          saidaFOIS[classificarFaixa(ultimoFOIS)]++;
+
+          if (comFOIS.length >= 2) {
+            totalPacientesComFOISMultiplo++;
+            const diff = ultimoFOIS - primeiroFOIS;
+            deltasFOIS.push(diff);
+            if (diff > 0) pacientesEvoluiramPositivo++;
+          }
+        }
+
+        const comASHA = registros.filter(r => r.asha !== null);
+        if (comASHA.length >= 2) {
+          deltasASHA.push(comASHA[comASHA.length - 1].asha - comASHA[0].asha);
+        }
+      });
+
+      const mediaFOIS = deltasFOIS.length > 0 ? (deltasFOIS.reduce((a, b) => a + b, 0) / deltasFOIS.length).toFixed(2) : null;
+      const mediaASHA = deltasASHA.length > 0 ? (deltasASHA.reduce((a, b) => a + b, 0) / deltasASHA.length).toFixed(2) : null;
+      
+      document.getElementById('kpi-total-unicos').innerText = idsProcessados.size;
+      document.getElementById('kpi-total-registros').innerText = linhas.length;
+      
+      const pctSla = qtdEsperaValida > 0 ? ((qtdSla24h / qtdEsperaValida) * 100).toFixed(1) + "%" : "0%";
+      document.getElementById('kpi-sla-24h').innerText = pctSla;
+
+      const mediaEspera = qtdEsperaValida > 0 ? (somaEspera / qtdEsperaValida).toFixed(1) : 0;
+      document.getElementById('kpi-tempo-medio').innerText = `${mediaEspera} h`;
+
+      const mediaSessoes = idsProcessados.size > 0 ? (linhas.length / idsProcessados.size).toFixed(1) : "0";
+      document.getElementById('kpi-sessoes-paciente').innerText = mediaSessoes;
+
+      const pctEvolucao = totalPacientesComFOISMultiplo > 0 ? ((pacientesEvoluiramPositivo / totalPacientesComFOISMultiplo) * 100).toFixed(1) + "%" : "N/D";
+      document.getElementById('kpi-pct-evolucao').innerText = pctEvolucao;
+
+      const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
+      document.getElementById('kpi-pct-tqt').innerText = pctTQT;
+
+      document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
+      document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
+
+      let datasOrdenadas = Array.from(conjuntoTodasDatas).sort();
+      if (datasOrdenadas.length > 0 && periodoSelecionado !== 'TODOS') {
+        const dataMaisRecenteISO = datasOrdenadas[datasOrdenadas.length - 1];
+        const dataAncora = new Date(dataMaisRecenteISO + "T00:00:00");
+        let dataLimite = new Date(dataAncora);
+        if (periodoSelecionado === '1Y') dataLimite.setFullYear(dataAncora.getFullYear() - 1);
+        else if (periodoSelecionado === '6M') dataLimite.setMonth(dataAncora.getMonth() - 6);
+        else if (periodoSelecionado === '3M') dataLimite.setMonth(dataAncora.getMonth() - 3);
+        else if (periodoSelecionado === '1M') dataLimite.setMonth(dataAncora.getMonth() - 1);
+        else if (periodoSelecionado === '1W') dataLimite.setDate(dataAncora.getDate() - 7);
+        else if (periodoSelecionado === '1D') dataLimite.setDate(dataAncora.getDate() - 1);
+
+        datasOrdenadas = datasOrdenadas.filter(dataISO => new Date(dataISO + "T00:00:00") >= dataLimite);
       }
 
-      consultores[nomeConsultor] = (consultores[nomeConsultor] || 0) + 1;
+      const rotulosDatas = datasOrdenadas.map(dataISO => formatarDataExibicao(dataISO));
+      const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
+      const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
+
+      renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
+      renderizarGraficoNivelAssistencial(niveisAssistenciais);
+      
+      const consultoresOriginais = Object.entries(consultores);
+      renderizarGraficoBarras('graficoConsultores', consultoresOriginais.map(i => i[0]), consultoresOriginais.map(i => i[1]), 'Atendimentos');
+      
+      renderizarGraficoPizza('graficoTurnos', Object.keys(turnos), Object.values(turnos));
+      renderizarGraficoSolicitantes(Object.keys(solicitantes), Object.values(solicitantes));
+
+      renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
+      renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
+      renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
+      renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
+
+      const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
+
+      const rankingUnidades = Object.entries(tempoEsperaPorUnidade)
+        .map(([loc, obj]) => ({ loc, media: obj.soma / obj.count }))
+        .sort((a,b) => b.media - a.media)
+        .slice(0, 8);
+      renderizarGraficoBarraHorizontal('graficoEsperaUnidades', rankingUnidades.map(i => i.loc), rankingUnidades.map(i => i.media.toFixed(1)), '#dc3545');
     }
-
-    if (!isNaN(tempoEspera)) {
-      somaEspera += tempoEspera;
-      qtdEsperaValida++;
-      if (tempoEspera <= 24) qtdSla24h++;
-
-      if (localAtend && String(localAtend).trim() !== '') {
-        const loc = String(localAtend).trim();
-        if (!tempoEsperaPorUnidade[loc]) tempoEsperaPorUnidade[loc] = { soma: 0, count: 0 };
-        tempoEsperaPorUnidade[loc].soma += tempoEspera;
-        tempoEsperaPorUnidade[loc].count++;
-      }
-    }
-  });
-
-  // Cálculos de FOIS, ASHA e Evolução Funcional
-  const deltasFOIS = [];
-  const deltasASHA = [];
-  let pacientesEvoluiramPositivo = 0;
-  let totalPacientesComFOISMultiplo = 0;
-
-  const entradaFOIS = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
-  const saidaFOIS   = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
-
-  Object.values(historicoPacientes).forEach(registros => {
-    registros.sort((a, b) => a.data - b.data);
-
-    const comFOIS = registros.filter(r => r.fois !== null);
-    if (comFOIS.length > 0) {
-      const primeiroFOIS = comFOIS[0].fois;
-      const ultimoFOIS = comFOIS[comFOIS.length - 1].fois;
-
-      const classificarFaixa = (n) => n <= 3 ? 'Nível 1-3' : (n === 4 ? 'Nível 4' : 'Nível 5-7');
-      entradaFOIS[classificarFaixa(primeiroFOIS)]++;
-      saidaFOIS[classificarFaixa(ultimoFOIS)]++;
-
-      if (comFOIS.length >= 2) {
-        totalPacientesComFOISMultiplo++;
-        const diff = ultimoFOIS - primeiroFOIS;
-        deltasFOIS.push(diff);
-        if (diff > 0) pacientesEvoluiramPositivo++;
-      }
-    }
-
-    const comASHA = registros.filter(r => r.asha !== null);
-    if (comASHA.length >= 2) {
-      deltasASHA.push(comASHA[comASHA.length - 1].asha - comASHA[0].asha);
-    }
-  });
-
-  const mediaFOIS = deltasFOIS.length > 0 ? (deltasFOIS.reduce((a, b) => a + b, 0) / deltasFOIS.length).toFixed(2) : null;
-  const mediaASHA = deltasASHA.length > 0 ? (deltasASHA.reduce((a, b) => a + b, 0) / deltasASHA.length).toFixed(2) : null;
-  
-  // Atualização dos Cards de KPI
-  document.getElementById('kpi-total-unicos').innerText = idsProcessados.size;
-  document.getElementById('kpi-total-registros').innerText = linhas.length;
-  
-  const pctSla = qtdEsperaValida > 0 ? ((qtdSla24h / qtdEsperaValida) * 100).toFixed(1) + "%" : "0%";
-  document.getElementById('kpi-sla-24h').innerText = pctSla;
-
-  const mediaEspera = qtdEsperaValida > 0 ? (somaEspera / qtdEsperaValida).toFixed(1) : 0;
-  document.getElementById('kpi-tempo-medio').innerText = `${mediaEspera} h`;
-
-  const mediaSessoes = idsProcessados.size > 0 ? (linhas.length / idsProcessados.size).toFixed(1) : "0";
-  document.getElementById('kpi-sessoes-paciente').innerText = mediaSessoes;
-
-  const pctEvolucao = totalPacientesComFOISMultiplo > 0 ? ((pacientesEvoluiramPositivo / totalPacientesComFOISMultiplo) * 100).toFixed(1) + "%" : "N/D";
-  document.getElementById('kpi-pct-evolucao').innerText = pctEvolucao;
-
-  const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
-  document.getElementById('kpi-pct-tqt').innerText = pctTQT;
-
-  document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
-  document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
-
-  // Filtro da Linha do Tempo
-  let datasOrdenadas = Array.from(conjuntoTodasDatas).sort();
-  if (datasOrdenadas.length > 0 && periodoSelecionado !== 'TODOS') {
-    const dataMaisRecenteISO = datasOrdenadas[datasOrdenadas.length - 1];
-    const dataAncora = new Date(dataMaisRecenteISO + "T00:00:00");
-    let dataLimite = new Date(dataAncora);
-    if (periodoSelecionado === '1Y') dataLimite.setFullYear(dataAncora.getFullYear() - 1);
-    else if (periodoSelecionado === '6M') dataLimite.setMonth(dataAncora.getMonth() - 6);
-    else if (periodoSelecionado === '3M') dataLimite.setMonth(dataAncora.getMonth() - 3);
-    else if (periodoSelecionado === '1M') dataLimite.setMonth(dataAncora.getMonth() - 1);
-    else if (periodoSelecionado === '1W') dataLimite.setDate(dataAncora.getDate() - 7);
-    else if (periodoSelecionado === '1D') dataLimite.setDate(dataAncora.getDate() - 1);
-
-    datasOrdenadas = datasOrdenadas.filter(dataISO => new Date(dataISO + "T00:00:00") >= dataLimite);
-  }
-
-  const rotulosDatas = datasOrdenadas.map(dataISO => formatarDataExibicao(dataISO));
-  const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
-  const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
-
-  // RENDERIZAÇÃO DOS GRÁFICOS
-  renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
-  renderizarGraficoNivelAssistencial(niveisAssistenciais);
-  
-  const consultoresOriginais = Object.entries(consultores);
-  renderizarGraficoBarras('graficoConsultores', consultoresOriginais.map(i => i[0]), consultoresOriginais.map(i => i[1]), 'Atendimentos');
-  
-  renderizarGraficoPizza('graficoTurnos', Object.keys(turnos), Object.values(turnos));
-  renderizarGraficoSolicitantes(Object.keys(solicitantes), Object.values(solicitantes));
-
-  renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
-  renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
-  renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
-  renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
-
-  // Top Especialidades Solicitantes
-  const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
-  renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
-
-  // Top Unidades Tempo de Espera
-  const rankingUnidades = Object.entries(tempoEsperaPorUnidade)
-    .map(([loc, obj]) => ({ loc, media: obj.soma / obj.count }))
-    .sort((a,b) => b.media - a.media)
-    .slice(0, 8);
-  renderizarGraficoBarraHorizontal('graficoEsperaUnidades', rankingUnidades.map(i => i.loc), rankingUnidades.map(i => i.media.toFixed(1)), '#dc3545');
-}
 
     // FUNÇÕES DE RENDERIZAÇÃO DOS GRÁFICOS
     function renderizarGraficoLinhaTempo(labelsDatas, dadosSolicitados, dadosAtendidos) {
@@ -1275,7 +1282,103 @@ function classificarAVC(textoResposta) {
       });
     }
 
-    // Tentativa inicial de leitura do DADOS.csv
+    // FUNÇÕES DE EXPORTAÇÃO PDF DINÂMICA
+    function abrirModalPDF() {
+      const container = document.getElementById('container-checkboxes-pdf');
+      container.innerHTML = '';
+
+      const blocos = document.querySelectorAll('.pdf-block');
+      
+      blocos.forEach((bloco, index) => {
+        const nome = bloco.getAttribute('data-pdf-nome') || `Bloco ${index + 1}`;
+        
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;';
+        
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = true;
+        chk.className = 'chk-pdf-item';
+        chk.value = index;
+
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(nome));
+        container.appendChild(label);
+      });
+
+      document.getElementById('modal-exportar-pdf').style.display = 'flex';
+    }
+
+    function fecharModalPDF() {
+      document.getElementById('modal-exportar-pdf').style.display = 'none';
+    }
+
+    async function processarPDFSelecionado() {
+      const { jsPDF } = window.jspdf;
+      const checkboxes = document.querySelectorAll('.chk-pdf-item');
+      const blocos = document.querySelectorAll('.pdf-block');
+      
+      fecharModalPDF();
+
+      const elementosOcultados = [];
+
+      const uiFiltros = document.querySelectorAll('header, .filter-container');
+      uiFiltros.forEach(el => {
+        el.dataset.displayOriginal = el.style.display;
+        el.style.display = 'none';
+        elementosOcultados.push(el);
+      });
+
+      checkboxes.forEach((chk, index) => {
+        if (!chk.checked) {
+          const bloco = blocos[index];
+          bloco.dataset.displayOriginal = bloco.style.display;
+          bloco.style.display = 'none';
+          elementosOcultados.push(bloco);
+        }
+      });
+
+      try {
+        const canvas = await html2canvas(document.body, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#f0f2f5'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const pdfLargura = pdf.internal.pageSize.getWidth();
+        const pdfAlturaPagina = pdf.internal.pageSize.getHeight();
+        const imgLargura = pdfLargura;
+        const imgAltura = (canvas.height * pdfLargura) / canvas.width;
+        
+        let alturaRestante = imgAltura;
+        let posicaoY = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, posicaoY, imgLargura, imgAltura);
+        alturaRestante -= pdfAlturaPagina;
+
+        while (alturaRestante > 0) {
+          posicaoY = alturaRestante - imgAltura;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, posicaoY, imgLargura, imgAltura);
+          alturaRestante -= pdfAlturaPagina;
+        }
+
+        const dataHoje = new Date().toISOString().split('T')[0];
+        pdf.save(`Relatorio_Fonoaudiologia_${dataHoje}.pdf`);
+
+      } catch (erro) {
+        alert("Erro ao gerar o PDF: " + erro);
+      } finally {
+        elementosOcultados.forEach(el => {
+          el.style.display = el.dataset.displayOriginal || '';
+        });
+      }
+    }
+
+    // Leitura automática do DADOS.csv
     Papa.parse(NOME_ARQUIVO_CSV, {
       download: true,
       header: true,
