@@ -588,28 +588,47 @@
       }
     }
 
+    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL (Suporta textos sem acentos ou corrompidos)
     function extrairNivelAssistencial(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
+      
       const textoLimpo = String(textoResposta)
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "") // Remove todos os acentos
         .replace(/\s+/g, " ");
-      const regexNivel = /[nN][íi]vel\s+[aA]ssistencial\s*[:\-=]?\s*([a-zé\s]+)/i;
+
+      const regexNivel = /nivel\s+assistencial\s*[:\-=]?\s*([a-z]+)/i;
       const match = textoLimpo.match(regexNivel);
-      if (match && match[0]) {
-        const trechoEncontrado = match[0];
-        if (trechoEncontrado.includes('alto')) return 'Alto';
-        if (trechoEncontrado.includes('medio') || trechoEncontrado.includes('médio')) return 'Médio';
-        if (trechoEncontrado.includes('baixo')) return 'Baixo';
+      
+      if (match && match[1]) {
+        const valor = match[1];
+        if (valor.includes('alto')) return 'Alto';
+        if (valor.includes('medio')) return 'Médio';
+        if (valor.includes('baixo')) return 'Baixo';
       }
+
+      // Busca direta secundária no texto caso não haja dois pontos após o título
+      if (/nivel\s+assistencial.*?\balto\b/i.test(textoLimpo)) return 'Alto';
+      if (/nivel\s+assistencial.*?\bmedio\b/i.test(textoLimpo)) return 'Médio';
+      if (/nivel\s+assistencial.*?\bbaixo\b/i.test(textoLimpo)) return 'Baixo';
+
       return 'Não Informado';
     }
 
     function extrairNotaEscala(textoResposta, escala) {
       if (!textoResposta || String(textoResposta).trim() === '') return null;
-      const regex = new RegExp(`${escala}[^\\d\\/\\.\\n]{0,15}\\b([1-7])\\b`, 'i');
-      const match = String(textoResposta).match(regex);
+      const texto = String(textoResposta)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const escalaLimpa = String(escala)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+        
+      const regex = new RegExp(`${escalaLimpa}[^\\d\\/\\.\\n]{0,15}\\b([1-7])\\b`, 'i');
+      const match = texto.match(regex);
       return match ? parseInt(match[1], 10) : null;
     }
 
@@ -633,8 +652,11 @@
 
     function verificarTraqueostomia(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return false;
-      const texto = String(textoResposta).toUpperCase();
-      return /\b(TRAQUEOSTOMIA|TQT|C[AÂ]NULA)\b/.test(texto);
+      const texto = String(textoResposta)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return /\b(TRAQUEOSTOMIA|TQT|CANULA)\b/.test(texto);
     }
 
     function classificarAVC(textoResposta) {
@@ -1447,12 +1469,15 @@
       }
     }
 
-    // Leitura automática do DADOS.csv
+    // Leitura automática do DADOS.csv com sanitização de cabeçalho
     Papa.parse(NOME_ARQUIVO_CSV, {
       download: true,
       header: true,
       skipEmptyLines: true,
       encoding: "UTF-8",
+      transformHeader: function(header) {
+        return header.replace(/^\uFEFF/, '').trim();
+      },
       complete: function(results) {
         if (results.data && results.data.length > 0) {
           dadosBrutosCSV = results.data;
