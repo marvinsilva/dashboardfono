@@ -1,37 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="icon" type="image/png" href="favicon.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="favicon.png">
-  <title>Indicadores de Altas Disfagia Adulto 2026</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Dashboard Fonoaudiologia - HCPA</title>
+  
   <style>
-    :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --primary: #3b82f6;
-      --success: #10b981;
-      --danger: #ef4444;
-      --purple: #8b5cf6;
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 30px;
+      background-color: #f0f2f5;
+      color: #1c1e21;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    
-    body { 
-      background-color: var(--bg); 
-      color: var(--text); 
-      margin: 0; 
-      padding: 0; 
-    }
-
-    /* --- MENU DE NAVEGAÇÃO SUPERIOR IDENTICO AO ORIGINAL --- */
+    /* --- MENU DE NAVEGAÇÃO SUPERIOR UNIFICADO --- */
     .top-nav {
       background-color: #004085;
-      width: 100%;
+      margin: -30px -30px 25px -30px;
       padding: 0 30px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
@@ -80,414 +70,1489 @@
       }
     }
 
-    /* CONTAINER DO CONTEÚDO PRINCIPAL */
-    .main-container {
-      max-width: 1300px;
-      margin: 0 auto;
-      padding: 2rem 1rem;
+    header {
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #004085;
+      margin: 0 0 8px 0;
+      font-size: 26px;
+    }
+    p.sub {
+      color: #6c757d;
+      margin: 0;
+      font-size: 14px;
     }
 
-    header { text-align: center; margin-bottom: 2rem; }
-    h1 { font-size: 1.9rem; color: var(--text); }
-    .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.25rem; }
+    /* Container de Filtros */
+    .filter-container {
+      background: #ffffff;
+      padding: 18px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 25px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex: 1;
+      min-width: 260px;
+    }
+    .filter-label {
+      font-weight: bold;
+      color: #004085;
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: block;
+    }
 
-    /* KPIs */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .kpi-card { background: var(--card-bg); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-    .kpi-title { font-size: 0.8rem; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; }
-    .kpi-value { font-size: 2rem; font-weight: 700; }
-    .kpi-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+    .dropdown-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+      background-color: #fff;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #333;
+    }
+    .dropdown-btn:after {
+      content: "▼";
+      font-size: 10px;
+      color: #6c757d;
+    }
 
-    /* Layout de Gráficos */
-    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
-    @media (max-width: 850px) { .charts-grid { grid-template-columns: 1fr; } }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      min-width: 300px;
+      background-color: #ffffff;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+      padding: 10px;
+      z-index: 100;
+      margin-top: 5px;
+    }
+    .dropdown-content.show {
+      display: block;
+    }
 
-    .panel { background: var(--card-bg); border-radius: 10px; padding: 1.25rem; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-    .panel-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    /* Estilos do Seletor de Datas */
+    .date-inputs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .date-picker {
+      padding: 9px 12px;
+      border-radius: 6px;
+      border: 1px solid #ced4da;
+      font-size: 14px;
+      color: #333;
+      background-color: #fff;
+      font-family: inherit;
+      outline: none;
+      flex: 1;
+      min-width: 120px;
+    }
+    .date-picker:focus {
+      border-color: #0056b3;
+    }
+    .btn-clear-date {
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
+      color: #495057;
+      padding: 9px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-clear-date:hover {
+      background-color: #dc3545;
+      color: #ffffff;
+      border-color: #dc3545;
+    }
 
-    /* Container do Gráfico de Rosca */
-    .chart-container-large { position: relative; height: 350px; width: 100%; display: flex; justify-content: center; align-items: center; }
+    /* Botão Exportar PDF Compacto */
+    .btn-export-pdf {
+      background-color: #28a745;
+      color: #ffffff;
+      border: 1px solid #28a745;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      height: 40px;
+    }
+    .btn-export-pdf:hover {
+      background-color: #218838;
+      border-color: #1e7e34;
+    }
 
-    /* Tabela e Busca */
-    .controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
-    .search-input { width: 100%; max-width: 350px; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 6px; outline: none; font-size: 0.9rem; }
-    .search-input:focus { border-color: var(--primary); }
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #eef2f7;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px dashed #0056b3;
+    }
 
-    .table-container { overflow-x: auto; max-height: 450px; overflow-y: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
-    th { background: #f1f5f9; color: var(--muted); padding: 0.75rem 1rem; position: sticky; top: 0; font-weight: 600; border-bottom: 2px solid var(--border); z-index: 2; }
-    td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
-    tr:hover { background-color: #f8fafc; }
+    .search-box {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 13px;
+    }
 
-    .badge { padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-    .badge-alta { background: #d1fae5; color: #065f46; }
-    .badge-obito { background: #fee2e2; color: #991b1b; }
-    .badge-outro { background: #f1f5f9; color: #475569; }
+    .checkbox-list {
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #333;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    .checkbox-item:hover {
+      background-color: #f0f4f8;
+    }
 
-    /* Paginação */
-    .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.85rem; color: var(--muted); }
-    .pagination-btn { background: var(--bg); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 5px; cursor: pointer; }
-    .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .kpi-card {
+      background: #ffffff;
+      padding: 16px 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 5px solid #0056b3;
+    }
+    .kpi-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 11px;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .kpi-card p {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #1c1e21;
+    }
 
-    footer { text-align: center; margin-top: 2.5rem; padding-bottom: 1rem; }
-    footer .dev-credits { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .timeline-card, .full-width-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 25px;
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .timeline-header h2, .full-width-card h2 {
+      font-size: 16px;
+      margin: 0 0 15px 0;
+      color: #333;
+    }
+
+    .time-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .time-btn {
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
+      color: #495057;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .time-btn:hover {
+      background-color: #dee2e6;
+    }
+    .time-btn.active {
+      background-color: #0056b3;
+      color: #ffffff;
+      border-color: #0056b3;
+    }
+
+    .scroll-area-y {
+      width: 100%;
+      max-height: 400px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 10px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 25px;
+    }
+    .chart-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .chart-card h2 {
+      font-size: 15px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px 0 10px 0;
+      font-size: 12px;
+      color: #8c98a4;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
   </style>
+
+  <!-- Bibliotecas Base -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  
+  <!-- Bibliotecas para Gerar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-  <!-- CABEÇALHO SUPERIOR UNIFICADO -->
+  <!-- MENU DE NAVEGAÇÃO SUPERIOR -->
   <nav class="top-nav">
     <div class="nav-container">
-      <span class="nav-brand">Gestão Fonoaudiologia - HCPA</span>
+      <span class="nav-brand">Fonoaudiologia — HCPA</span>
       <div class="nav-links">
-        <a href="https://marvinsilva.github.io/dashboardfono/" class="nav-item">Dashboard Gestão</a>
-        <a href="https://marvinsilva.github.io/disfagiaadulto/" class="nav-item active">Indicadores de Altas</a>
+        <a href="https://marvinsilva.github.io/dashboardfono/" class="nav-item active">Dashboard Gestão</a>
+        <a href="https://marvinsilva.github.io/disfagiaadulto/" class="nav-item">Indicadores de Altas</a>
       </div>
     </div>
   </nav>
 
-  <main class="main-container">
-    <header>
-      <h1>Indicadores de Altas Disfagia Adulto</h1>
-      <p class="subtitle">Acompanhamento de desfechos, dietas prescritas e orientações fonoaudiológicas</p>
-    </header>
+  <header>
+    <h1>Gestão Fonoaudiologia — HCPA</h1>
+    <p class="sub">Painel demonstrativo baseado em dados extraídos do AGHUSE</p>
+  </header>
 
-    <!-- KPIs -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-title">Total de Pacientes</div>
-        <div class="kpi-value" id="kpiTotal">0</div>
+  <div class="filter-container">
+    <!-- Seleção / Carga do CSV -->
+    <div class="filter-group" style="max-width: 300px;">
+      <span class="filter-label">Carregar Arquivo CSV:</span>
+      <div class="file-input-wrapper">
+        <input type="file" id="input-csv" accept=".csv" onchange="carregarCSVManual(event)" style="font-size: 13px; width: 100%;">
       </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Altas</div>
-        <div class="kpi-value" style="color: var(--success);" id="kpiAltas">0</div>
-        <div class="kpi-sub" id="pctAltas">0% do total</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Óbitos</div>
-        <div class="kpi-value" style="color: var(--danger);" id="kpiObitos">0</div>
-        <div class="kpi-sub" id="pctObitos">0% do total</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-title">Com Orientações de Alta</div>
-        <div class="kpi-value" style="color: var(--purple);" id="kpiOrientacoes">0</div>
-      </div>
-    </section>
+    </div>
 
-    <!-- GRÁFICOS -->
-    <section class="charts-grid">
-      <div class="panel">
-        <h2 class="panel-title">Proporção por Desfecho</h2>
-        <div class="chart-container-large">
-          <canvas id="chartSituacao"></canvas>
+    <!-- Filtro 1: Áreas de Atendimento -->
+    <div class="filter-group">
+      <span class="filter-label">Filtrar por Área(s) de Atendimento:</span>
+      <button id="btn-dropdown" class="dropdown-btn" onclick="alternarDropdown()">
+        <span id="btn-text">Todas as Áreas selecionadas</span>
+      </button>
+      <div id="dropdown-list" class="dropdown-content">
+        <input type="text" id="input-busca" class="search-box" placeholder="Pesquisar área..." onkeyup="filtrarListaOpcoes()">
+        <div class="checkbox-list">
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-todos" checked onchange="marcarTodos(this)">
+            <b>-- Selecionar Todas --</b>
+          </label>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 4px 0;">
+          <div id="lista-checkboxes"></div>
         </div>
       </div>
+    </div>
 
-      <div class="panel">
-        <h2 class="panel-title">Distribuição por Dieta na Saída</h2>
-        <div class="chart-container-large">
-          <canvas id="chartDieta"></canvas>
+    <!-- Filtro 2: Seletor de Datas -->
+    <div class="filter-group">
+      <span class="filter-label">Filtrar por Período:</span>
+      <div class="date-inputs">
+        <input type="date" id="dt-inicio" class="date-picker" onchange="aplicarFiltro()" title="Data Inicial">
+        <span style="font-size: 13px; color: #6c757d;">até</span>
+        <input type="date" id="dt-fim" class="date-picker" onchange="aplicarFiltro()" title="Data Final">
+        <button type="button" class="btn-clear-date" onclick="limparFiltroDatas()" title="Limpar Período">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Botão Exportar PDF -->
+    <div class="filter-group" style="min-width: auto; flex: initial;">
+      <button type="button" class="btn-export-pdf" onclick="abrirModalPDF()" title="Exportar Relatório PDF">
+        📄 PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid de Cards de KPI Ampliado -->
+  <div class="kpi-grid pdf-block" data-pdf-nome="Resumo de Indicadores (KPIs)">
+    <div class="kpi-card">
+      <h3>Pacientes Únicos</h3>
+      <p id="kpi-total-unicos">-</p>
+    </div>
+    
+    <div class="kpi-card" style="border-left-color: #28a745;">
+      <h3>Total Atendimentos</h3>
+      <p id="kpi-total-registros">-</p>
+    </div>
+
+    <div class="kpi-card" style="border-left-color: #17a2b8;">
+      <h3>Consultorias Respondidas em até 24h</h3>
+      <p id="kpi-sla-24h">-</p>
+    </div>
+    
+    <div class="kpi-card" style="border-left-color: #ffc107;">
+      <h3>Tempo Médio Espera</h3>
+      <p id="kpi-tempo-medio">-</p>
+    </div>
+
+    <div class="kpi-card" style="border-left-color: #fd7e14;">
+      <h3>Média Sessões/Paciente</h3>
+      <p id="kpi-sessoes-paciente">-</p>
+    </div>
+
+    <div class="kpi-card" style="border-left-color: #20c997;">
+      <h3>% Evolução Positiva (FOIS)</h3>
+      <p id="kpi-pct-evolucao">-</p>
+    </div>
+
+    <div class="kpi-card" style="border-left-color: #e83e8c;">
+      <h3>Pacientes com TQT</h3>
+      <p id="kpi-pct-tqt">-</p>
+    </div>
+
+    <div class="kpi-card" style="border-left-color: #6f42c1;">
+      <h3>Evolução Média (Δ)</h3>
+      <div style="display: flex; justify-content: space-around; align-items: center; margin-top: 4px;">
+        <div style="text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: #6c757d; display: block;">FOIS</span>
+          <p id="kpi-delta-fois" style="font-size: 20px;">-</p>
+        </div>
+        <div style="border-left: 1px solid #e0e0e0; height: 30px; margin: 0 4px;"></div>
+        <div style="text-align: center;">
+          <span style="font-size: 10px; font-weight: 700; color: #6c757d; display: block;">ASHA</span>
+          <p id="kpi-delta-asha" style="font-size: 20px;">-</p>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="panel" style="grid-column: 1 / -1;">
-        <h2 class="panel-title">Top Setores com mais Desfechos</h2>
-        <canvas id="chartLocal" style="max-height: 300px;"></canvas>
+  <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Solicitadas vs. Atendidas)">
+    <div class="timeline-header">
+      <h2 style="margin: 0;">Linha do tempo: Consultorias Solicitadas vs. Atendimentos Realizados</h2>
+      <div class="time-buttons">
+        <button class="time-btn active" onclick="definirFiltroPeriodo('TODOS', this)">Todos</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1Y', this)">1 Ano</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('6M', this)">6 Meses</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('3M', this)">3 Meses</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1M', this)">1 Mês</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1W', this)">1 Semana</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1D', this)">Hoje</button>
       </div>
-    </section>
+    </div>
+    <div style="position: relative; height: 320px;">
+      <canvas id="graficoLinhaTempo"></canvas>
+    </div>
+  </div>
 
-    <!-- TABELA DE PACIENTES -->
-    <section class="panel">
-      <div class="controls">
-        <h2 class="panel-title" style="margin-bottom:0;">Lista Completa de Pacientes</h2>
-        <input type="text" id="searchInput" class="search-input" placeholder="Buscar por paciente, prontuário, dieta, local...">
+  <div class="full-width-card pdf-block" data-pdf-nome="Gráfico: Atendimentos por Consultor">
+    <h2>Atendimentos por Consultor</h2>
+    <div class="scroll-area-y">
+      <div id="wrapperGraficoConsultores" style="position: relative; width: 100%;">
+        <canvas id="graficoConsultores"></canvas>
       </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Local</th>
-              <th>Prontuário</th>
-              <th>Paciente</th>
-              <th>Dieta</th>
-              <th>Situação</th>
-              <th>Orientações de Alta</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaBody">
-            <tr><td colspan="6" style="text-align: center;">Carregando dados...</td></tr>
-          </tbody>
-        </table>
-      </div>
+    </div>
+  </div>
 
-      <div class="pagination">
-        <span id="pageInfo">Página 1</span>
-        <div>
-          <button id="btnPrev" class="pagination-btn" onclick="mudarPagina(-1)">Anterior</button>
-          <button id="btnNext" class="pagination-btn" onclick="mudarPagina(1)">Próxima</button>
-        </div>
-      </div>
-    </section>
+  <!-- Gráficos Gerenciais e Clínicos -->
+  <div class="charts-grid">
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Evolução FOIS">
+      <h2>Evolução FOIS: Entrada vs. Saída</h2>
+      <canvas id="graficoEvolucaoFois"></canvas>
+    </div>
 
-    <footer>
-      <p class="dev-credits">Desenvolvido por Fgo Marvin Azevedo</p>
-    </footer>
-  </main>
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Via de Alimentação Predominante">
+      <h2>Via de Alimentação Predominante</h2>
+      <canvas id="graficoViasAlimentacao"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Demanda por Dia da Semana">
+      <h2>Demanda por Dia da Semana</h2>
+      <canvas id="graficoDiaSemana"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Especialidades Solicitantes">
+      <h2>Especialidades Solicitantes</h2>
+      <canvas id="graficoEspecialidades"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Maior Tempo de Espera por Unidade">
+      <h2>Unidades com Maior Tempo de Espera (h)</h2>
+      <canvas id="graficoEsperaUnidades"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Perfil do Solicitante">
+      <h2>Perfil do Solicitante</h2>
+      <canvas id="graficoSolicitantes"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Nível Assistencial">
+      <h2>Nível Assistencial</h2>
+      <canvas id="graficoNivelAssistencial"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Prevalência de AVC">
+      <h2>Prevalência de AVC</h2>
+      <canvas id="graficoAVC"></canvas>
+    </div>
+
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Distribuição por Turno">
+      <h2>Distribuição de Consultorias por Turno</h2>
+      <canvas id="graficoTurnos"></canvas>
+    </div>
+  </div>
+
+  <!-- Modal de Seleção para Exportação em PDF -->
+  <div id="modal-exportar-pdf" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: #fff; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0; color: #004085;">Selecione os blocos para o PDF</h3>
+      <p style="font-size: 13px; color: #6c757d;">Marque apenas as informações que deseja incluir no relatório:</p>
+      
+      <div id="container-checkboxes-pdf" style="display: flex; flex-direction: column; gap: 8px; margin: 15px 0;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button type="button" class="time-btn" onclick="fecharModalPDF()">Cancelar</button>
+        <button type="button" class="btn-export-pdf" onclick="processarPDFSelecionado()">Gerar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Dashboard Desenvolvido por Fgo Marvin Azevedo
+  </footer>
 
   <script>
-    let listaPacientes = [];
-    let listaFiltrada = [];
-    let paginaAtual = 1;
-    const itensPorPagina = 50;
+    if (typeof ChartDataLabels !== 'undefined') {
+      Chart.register(ChartDataLabels);
+    }
 
-    const mapaCoresDesfecho = {
-      'Alta hospitalar': '#22c55e',
-      'Alta fonoaudiológica': '#3b82f6',
-      'Óbito': '#334155',
-      'Transf externa': '#f97316',
-      'Transf NEUROFONO': '#0284c7',
-      'Alta para enfermaria (EMA)': '#eab308',
-      'Transf CTI': '#8b5cf6',
-      'Encerrada por piora clínica': '#15803d',
-      'Outros': '#94a3b8'
-    };
+    const NOME_ARQUIVO_CSV = "DADOS.csv";
+    const ANONIMIZAR_CONSULTORES = true;
 
-    function normalizarLocal(texto) {
-      if (!texto) return 'Não informado';
-      let str = String(texto).trim();
-      let upper = str.toUpperCase();
+    let dadosBrutosCSV = [];
+    let periodoSelecionado = 'TODOS';
 
-      if (upper.includes('EMA') || upper.includes('UAD') || upper.includes('EMERGÊNCIA') || upper.includes('EMERGENCIA')) {
-        return 'EMA';
+    // Função utilitária para limpar instâncias do Chart.js com segurança
+    function destruirGraficoSeExistir(idCanvas) {
+      const chartExistente = Chart.getChart(idCanvas);
+      if (chartExistente) {
+        chartExistente.destroy();
       }
-      if (upper.includes('CTI')) {
-        return 'CTI';
+    }
+
+    function converterParaNumero(valor) {
+      if (!valor) return NaN;
+      if (typeof valor === 'number') return valor;
+      const limpo = String(valor).replace(',', '.').trim();
+      return parseFloat(limpo);
+    }
+
+    function extrairDataISO(stringDataHora) {
+      if (!stringDataHora || String(stringDataHora).trim() === '') return null;
+      const texto = String(stringDataHora).trim();
+      if (texto.includes('/')) {
+        const partes = texto.split(' ')[0].split('/');
+        if (partes.length === 3) {
+          const dia = partes[0].padStart(2, '0');
+          const mes = partes[1].padStart(2, '0');
+          const ano = partes[2].length === 2 ? '20' + partes[2] : partes[2];
+          return `${ano}-${mes}-${dia}`;
+        }
+      } 
+      else if (texto.includes('-')) {
+        return texto.split(' ')[0];
       }
-      return str;
+      return null;
     }
 
-    function normalizarDesfecho(texto) {
-      if (!texto) return 'Outros';
-      const s = texto.toLowerCase();
-
-      if (s.includes('hospitalar')) return 'Alta hospitalar';
-      if (s.includes('fono')) return 'Alta fonoaudiológica';
-      if (s.includes('obito') || s.includes('óbito')) return 'Óbito';
-      if (s.includes('externa') || s.includes('outro hospital')) return 'Transf externa';
-      if (s.includes('neurofono')) return 'Transf NEUROFONO';
-      if (s.includes('ema') || s.includes('enfermaria')) return 'Alta para enfermaria (EMA)';
-      if (s.includes('cti')) return 'Transf CTI';
-      if (s.includes('piora')) return 'Encerrada por piora clínica';
-
-      return 'Outros';
+    function formatarDataExibicao(dataISO) {
+      if (!dataISO) return '';
+      const partes = dataISO.split('-');
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
-    function anonimizarNome(nome) {
-      if (!nome) return 'Paciente Anônimo';
-      return nome.split(' ').map(parte => {
-        if (parte.length <= 2) return parte;
-        return parte[0] + '***';
-      }).join(' ');
+    function extrairTurnoPorHorario(stringDataHora) {
+      if (!stringDataHora || String(stringDataHora).trim() === '') return 'Não Informado';
+      const texto = String(stringDataHora).trim();
+      
+      let hora = null;
+      if (texto.includes(' ')) {
+        const parteHora = texto.split(' ')[1];
+        if (parteHora && parteHora.includes(':')) {
+          hora = parseInt(parteHora.split(':')[0], 10);
+        }
+      }
+      
+      if (hora === null || isNaN(hora)) return 'Não Informado';
+
+      if (hora >= 7 && hora <= 12) {
+        return 'Manhã (07h-12h59)';
+      } else if (hora >= 13 && hora <= 18) {
+        return 'Tarde (13h-18h59)';
+      } else {
+        return 'Noite (19h-06h59)';
+      }
     }
 
-    function anonimizarProntuario(pront) {
-      if (!pront || pront === '-') return '-';
-      const str = String(pront).trim();
-      if (str.length <= 3) return '***';
-      return '***' + str.slice(-3);
+    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL (Suporta textos sem acentos ou corrompidos)
+    function extrairNivelAssistencial(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
+      
+      const textoLimpo = String(textoResposta)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove todos os acentos
+        .replace(/\s+/g, " ");
+
+      const regexNivel = /nivel\s+assistencial\s*[:\-=]?\s*([a-z]+)/i;
+      const match = textoLimpo.match(regexNivel);
+      
+      if (match && match[1]) {
+        const valor = match[1];
+        if (valor.includes('alto')) return 'Alto';
+        if (valor.includes('medio')) return 'Médio';
+        if (valor.includes('baixo')) return 'Baixo';
+      }
+
+      // Busca direta secundária no texto caso não haja dois pontos após o título
+      if (/nivel\s+assistencial.*?\balto\b/i.test(textoLimpo)) return 'Alto';
+      if (/nivel\s+assistencial.*?\bmedio\b/i.test(textoLimpo)) return 'Médio';
+      if (/nivel\s+assistencial.*?\bbaixo\b/i.test(textoLimpo)) return 'Baixo';
+
+      return 'Não Informado';
     }
 
-    fetch('dados.json')
-      .then(res => res.json())
-      .then(matriz => {
-        if (!matriz || matriz.length <= 1) return;
+    function extrairNotaEscala(textoResposta, escala) {
+      if (!textoResposta || String(textoResposta).trim() === '') return null;
+      const texto = String(textoResposta)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const escalaLimpa = String(escala)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+        
+      const regex = new RegExp(`${escalaLimpa}[^\\d\\/\\.\\n]{0,15}\\b([1-7])\\b`, 'i');
+      const match = texto.match(regex);
+      return match ? parseInt(match[1], 10) : null;
+    }
 
-        const cabecalhos = matriz[0].map(c => String(c).trim().toLowerCase());
-        const idxLocal = cabecalhos.findIndex(c => c.includes('local'));
-        const idxPront = cabecalhos.findIndex(c => c.includes('prontu'));
-        const idxNome = cabecalhos.findIndex(c => c.includes('nome') || c.includes('paciente'));
-        const idxDieta = cabecalhos.findIndex(c => c.includes('dieta'));
-        const idxSituacao = cabecalhos.findIndex(c => c.includes('situa') || c.includes('desfecho'));
-        const idxOrient = cabecalhos.findIndex(c => c.includes('orienta'));
+    function extrairViaAlimentacao(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return 'Outros / Não Informado';
 
-        listaPacientes = matriz.slice(1).map(row => {
-          const nomeBruto = String(row[idxNome] || '').trim();
-          if (!nomeBruto) return null;
+      const texto = String(textoResposta)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
 
-          const desfechoPadrao = normalizarDesfecho(String(row[idxSituacao] || ''));
-          const localPadrao = normalizarLocal(row[idxLocal]);
+      if (/\b(GTT|GASTROSTOMIA)\b/.test(texto)) return 'GTT';
+      if (/\b(SNE|SNT|SNG|SONDA ENTERAL|SONDA NASOENTERICA|SONDA NASOGASTRICA)\b/.test(texto)) return 'SNE';
+      if (/\b(VO|VIA ORAL|DIETA ORAL|PASTOSA|BRANDA|LIQUIDIFICADA|LIQUIDA|INTRODUTORIA|DIETA NORMAL|VO NORMAL)\b/.test(texto)) {
+        return 'Via Oral (VO)';
+      }
+      if (/\b(ZERO|NPO|NADA POR VIA ORAL)\b/.test(texto)) return 'NPO (Zero)';
 
-          return {
-            local: localPadrao,
-            prontuario: anonimizarProntuario(row[idxPront]),
-            nome: anonimizarNome(nomeBruto),
-            dieta: String(row[idxDieta] || 'Sem informação').trim(),
-            situacao: desfechoPadrao,
-            orientacoes: String(row[idxOrient] || '').trim()
-          };
-        }).filter(p => p !== null);
+      return 'Outros / Não Informado';
+    }
 
-        listaFiltrada = [...listaPacientes];
-        montarDashboard();
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('tabelaBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Erro ao carregar os dados.</td></tr>`;
+    function verificarTraqueostomia(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return false;
+      const texto = String(textoResposta)
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return /\b(TRAQUEOSTOMIA|TQT|CANULA)\b/.test(texto);
+    }
+
+    function classificarAVC(textoResposta) {
+      if (!textoResposta || String(textoResposta).trim() === '') return 'Outros/Sem AVC';
+
+      const textoLimpo = String(textoResposta)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+      const regexAVC = /\b(avci?|avch?|avei?|aveh?|ait|acidente vascular (cerebral|encefalico)|ictus|sindrome sensitivo[- ]motora)\b/i;
+
+      if (!regexAVC.test(textoLimpo)) {
+        return 'Outros/Sem AVC';
+      }
+
+      const regexPassado = /\b(previo|previa|previos|previas|antigo|antiga|sequela|sequelas|historico|historica|historia|pregresso|pregressa|hmp|antecedente|antecedentes)\b/;
+      const regexTempoPassado = /(\(\s*\d{4}\s*\)|\b(em|de)\s+(19\d\d|20[0-2][0-6])\b|\bha\s+\d+\s+(anos|meses)\b)/;
+
+      const regexAgudo = /\b(agudo|aguda|recente|recentes|subagudo|subaguda|atual|hda|novo|nova|recorrente|recorrencia)\b/;
+      const regexTempoAgudo = /\bha\s+\d+\s+(dias|horas)\b/;
+
+      const segmentos = textoLimpo.split(/[.;\n,\/]/);
+      let temAgudo = false;
+      let temPrevio = false;
+
+      for (const seg of segmentos) {
+        if (regexAVC.test(seg)) {
+          const eAgudo = regexAgudo.test(seg) || regexTempoAgudo.test(seg);
+          const ePassado = regexPassado.test(seg) || regexTempoPassado.test(seg);
+
+          if (eAgudo || !ePassado) {
+            temAgudo = true;
+          } else {
+            temPrevio = true;
+          }
+        }
+      }
+
+      if (temAgudo) return 'AVC Agudo/Atual';
+      if (temPrevio) return 'AVC Prévio/Histórico';
+
+      return 'Outros/Sem AVC';
+    }
+  
+    function alternarDropdown() {
+      document.getElementById('dropdown-list').classList.toggle('show');
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-content')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+          dropdowns[i].classList.remove('show');
+        }
+      }
+    }
+
+    function filtrarListaOpcoes() {
+      const termo = document.getElementById('input-busca').value.toLowerCase();
+      const itens = document.querySelectorAll('#lista-checkboxes .checkbox-item');
+      itens.forEach(item => {
+        const texto = item.textContent.toLowerCase();
+        item.style.display = texto.includes(termo) ? 'flex' : 'none';
+      });
+    }
+
+    function preencherOpcoesDeFiltro(linhas) {
+      const conteiner = document.getElementById('lista-checkboxes');
+      conteiner.innerHTML = '';
+      const areasUnicas = new Set();
+      linhas.forEach(linha => {
+        const local = linha['LOCAL_ATEND'];
+        if (local && String(local).trim() !== '') {
+          areasUnicas.add(String(local).trim());
+        }
+      });
+      Array.from(areasUnicas).sort().forEach(area => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-item';
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.value = area;
+        chk.checked = true;
+        chk.className = 'chk-area';
+        chk.onchange = aplicarFiltro;
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(area));
+        conteiner.appendChild(label);
+      });
+    }
+
+    function configurarLimitesDatas(linhas) {
+      let minData = null;
+      let maxData = null;
+
+      linhas.forEach(linha => {
+        const dSolic = extrairDataISO(linha['SOLIC_CONSULTORIA']);
+        const dResp = extrairDataISO(linha['DTHR_RESPOSTA']);
+        const dRef = dResp || dSolic;
+        if (dRef) {
+          if (!minData || dRef < minData) minData = dRef;
+          if (!maxData || dRef > maxData) maxData = dRef;
+        }
       });
 
-    function montarDashboard() {
-      const total = listaPacientes.length;
-      let altas = 0, obitos = 0, comOrientacao = 0;
-      const contagemDieta = {}, contagemLocal = {}, contagemSituacao = {};
+      const inputInicio = document.getElementById('dt-inicio');
+      const inputFim = document.getElementById('dt-fim');
 
-      listaPacientes.forEach(p => {
-        const sitLower = p.situacao.toLowerCase();
-        if (sitLower.includes('alta')) altas++;
-        else if (sitLower.includes('obito') || sitLower.includes('óbito')) obitos++;
+      if (minData && maxData) {
+        inputInicio.min = minData;
+        inputInicio.max = maxData;
+        inputFim.min = minData;
+        inputFim.max = maxData;
+      }
+    }
 
-        if (p.orientacoes && p.orientacoes.length > 2) comOrientacao++;
+    function marcarTodos(source) {
+      const checkboxes = document.querySelectorAll('.chk-area');
+      checkboxes.forEach(chk => chk.checked = source.checked);
+      aplicarFiltro();
+    }
 
-        contagemSituacao[p.situacao] = (contagemSituacao[p.situacao] || 0) + 1;
-        contagemDieta[p.dieta] = (contagemDieta[p.dieta] || 0) + 1;
-        contagemLocal[p.local] = (contagemLocal[p.local] || 0) + 1;
+    function definirFiltroPeriodo(opcao, elementoBotao) {
+      periodoSelecionado = opcao;
+      document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+      elementoBotao.classList.add('active');
+      aplicarFiltro();
+    }
+
+    function limparFiltroDatas() {
+      document.getElementById('dt-inicio').value = '';
+      document.getElementById('dt-fim').value = '';
+      aplicarFiltro();
+    }
+
+    function carregarCSVManual(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const buffer = e.target.result;
+        let texto;
+
+        try {
+          const decoder = new TextDecoder('utf-8', { fatal: true });
+          texto = decoder.decode(buffer);
+        } catch (err) {
+          const decoder = new TextDecoder('iso-8859-1');
+          texto = decoder.decode(buffer);
+        }
+
+        Papa.parse(texto, {
+          header: true,
+          skipEmptyLines: true,
+          transformHeader: function(header) {
+            return header.replace(/^\uFEFF/, '').trim();
+          },
+          complete: function(results) {
+            if (results.data && results.data.length > 0) {
+              dadosBrutosCSV = results.data;
+              preencherOpcoesDeFiltro(dadosBrutosCSV);
+              configurarLimitesDatas(dadosBrutosCSV);
+              processarDadosCSV(dadosBrutosCSV);
+            } else {
+              alert("O arquivo selecionado está vazio ou incorreto.");
+            }
+          },
+          error: function(err) {
+            alert("Erro ao ler o arquivo CSV: " + err);
+          }
+        });
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function aplicarFiltro() {
+      const checkboxes = document.querySelectorAll('.chk-area');
+      const selecionadas = Array.from(checkboxes).filter(chk => chk.checked).map(chk => chk.value);
+      const chkTodos = document.getElementById('chk-todos');
+      const btnText = document.getElementById('btn-text');
+
+      if (selecionadas.length === checkboxes.length) {
+        btnText.innerText = "Todas as Áreas selecionadas";
+        chkTodos.checked = true;
+      } else if (selecionadas.length === 0) {
+        btnText.innerText = "Nenhuma área selecionada";
+        chkTodos.checked = false;
+      } else {
+        btnText.innerText = `${selecionadas.length} área(s) selecionada(s)`;
+        chkTodos.checked = false;
+      }
+
+      let dadosFiltrados = dadosBrutosCSV;
+
+      if (selecionadas.length < checkboxes.length) {
+        dadosFiltrados = dadosFiltrados.filter(linha => {
+          const local = linha['LOCAL_ATEND'];
+          return local && selecionadas.includes(String(local).trim());
+        });
+      }
+
+      const dtInicio = document.getElementById('dt-inicio').value;
+      const dtFim = document.getElementById('dt-fim').value;
+
+      if (dtInicio || dtFim) {
+        dadosFiltrados = dadosFiltrados.filter(linha => {
+          const dSolic = extrairDataISO(linha['SOLIC_CONSULTORIA']);
+          const dResp = extrairDataISO(linha['DTHR_RESPOSTA']);
+          const dRef = dResp || dSolic;
+
+          if (!dRef) return false;
+          if (dtInicio && dRef < dtInicio) return false;
+          if (dtFim && dRef > dtFim) return false;
+          return true;
+        });
+      }
+
+      processarDadosCSV(dadosFiltrados);
+    }
+
+    function processarDadosCSV(linhas) {
+      const idsProcessados = new Set();
+      const consultores = {};
+      
+      const mapaConsultores = {};
+      let contadorConsultor = 1;
+
+      const turnos = { 
+        'Manhã (07h-12h59)': 0, 
+        'Tarde (13h-18h59)': 0, 
+        'Noite (19h-06h59)': 0 
+      };
+
+      const niveisAssistenciais = { 'Alto': 0, 'Médio': 0, 'Baixo': 0, 'Não Informado': 0 };
+      const solicitantes = { 'Médicos': 0, 'Enfermeiros': 0, 'Outros/Não Info': 0 };
+      const viasAlimentacao = {};
+      const diasSemana = { 'Segunda': 0, 'Terça': 0, 'Quarta': 0, 'Quinta': 0, 'Sexta': 0, 'Sábado': 0, 'Domingo': 0 };
+      const especialidades = {};
+      const tempoEsperaPorUnidade = {};
+      const dadosAVC = { 'AVC Agudo/Atual': 0, 'AVC Prévio/Histórico': 0, 'Outros/Sem AVC': 0 };
+
+      let somaEspera = 0;
+      let qtdEsperaValida = 0;
+      let qtdSla24h = 0;
+      let qtdComTQT = 0;
+
+      const contagemSolicitacoesPorDia = {};
+      const contagemRespostasPorDia = {};
+      const conjuntoTodasDatas = new Set();
+      const historicoPacientes = {};
+
+      linhas.forEach(linha => {
+        const idAtendimento = linha['NOME_PACIENTE'];
+        const consultor     = linha['CONSULTOR'];
+        const textoResposta = linha['RESPOSTA'];
+        const conselho      = linha['CONSELHO_SOLIC'];
+        const localAtend    = linha['LOCAL_ATEND'];
+        const espAtend      = linha['ESP_ATENDIMENTO'] || linha['SIGLA_ESPECIALIDADE_ATENDIMENTO'];
+        const valorTempo    = linha['TEMPO_RESPOSTA_HORAS'] || linha['TEMPO_RESPOSTA_DIAS'];
+        const tempoEspera   = converterParaNumero(valorTempo);
+        
+        const rawSolic      = linha['SOLIC_CONSULTORIA'];
+        const rawResp       = linha['DTHR_RESPOSTA'];
+        const dataSolic     = extrairDataISO(rawSolic);
+        const dataResp      = extrairDataISO(rawResp);
+
+        const dataHoraRef = rawSolic || rawResp;
+        const nomeTurno = extrairTurnoPorHorario(dataHoraRef);
+
+        if (turnos[nomeTurno] !== undefined) {
+          turnos[nomeTurno]++;
+        } else {
+          turnos['Outros/Não Info'] = (turnos['Outros/Não Info'] || 0) + 1;
+        }
+
+        const nivel = extrairNivelAssistencial(textoResposta);
+        const via = extrairViaAlimentacao(textoResposta);
+        const temTQT = verificarTraqueostomia(textoResposta);
+        const statusAVC = classificarAVC(textoResposta);
+
+        niveisAssistenciais[nivel] = (niveisAssistenciais[nivel] || 0) + 1;
+        viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
+        if (temTQT) qtdComTQT++;
+        dadosAVC[statusAVC]++;
+
+        if (conselho && typeof conselho === 'string') {
+          const cUpper = conselho.toUpperCase();
+          if (cUpper.includes('CREMERS')) solicitantes['Médicos']++;
+          else if (cUpper.includes('COREN')) solicitantes['Enfermeiros']++;
+          else solicitantes['Outros/Não Info']++;
+        } else {
+          solicitantes['Outros/Não Info']++;
+        }
+
+        if (espAtend && String(espAtend).trim() !== '') {
+          const espNome = String(espAtend).trim();
+          especialidades[espNome] = (especialidades[espNome] || 0) + 1;
+        }
+
+        if (dataSolic) {
+          contagemSolicitacoesPorDia[dataSolic] = (contagemSolicitacoesPorDia[dataSolic] || 0) + 1;
+          conjuntoTodasDatas.add(dataSolic);
+
+          const dataObj = new Date(dataSolic + "T00:00:00");
+          const nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          const nomeDia = nomesDias[dataObj.getDay()];
+          if (diasSemana[nomeDia] !== undefined) diasSemana[nomeDia]++;
+        }
+
+        if (dataResp) {
+          contagemRespostasPorDia[dataResp] = (contagemRespostasPorDia[dataResp] || 0) + 1;
+          conjuntoTodasDatas.add(dataResp);
+        }
+        
+        if (!idAtendimento || String(idAtendimento).trim() === '') return;
+        const idPac = String(idAtendimento).trim();
+        idsProcessados.add(idPac);
+
+        const dataRef = dataResp || dataSolic;
+        if (dataRef) {
+          if (!historicoPacientes[idPac]) historicoPacientes[idPac] = [];
+          historicoPacientes[idPac].push({
+            data: new Date(dataRef + "T00:00:00"),
+            fois: extrairNotaEscala(textoResposta, 'FOIS'),
+            asha: extrairNotaEscala(textoResposta, 'ASHA')
+          });
+        }
+
+        if (consultor && String(consultor).trim() !== '') {
+          let nomeConsultor = String(consultor).trim();
+
+          if (typeof ANONIMIZAR_CONSULTORES !== 'undefined' && ANONIMIZAR_CONSULTORES) {
+            if (!mapaConsultores[nomeConsultor]) {
+              mapaConsultores[nomeConsultor] = `Fonoaudiólogo ${contadorConsultor++}`;
+            }
+            nomeConsultor = mapaConsultores[nomeConsultor];
+          }
+
+          consultores[nomeConsultor] = (consultores[nomeConsultor] || 0) + 1;
+        }
+
+        if (!isNaN(tempoEspera)) {
+          somaEspera += tempoEspera;
+          qtdEsperaValida++;
+          if (tempoEspera <= 24) qtdSla24h++;
+
+          if (localAtend && String(localAtend).trim() !== '') {
+            const loc = String(localAtend).trim();
+            if (!tempoEsperaPorUnidade[loc]) tempoEsperaPorUnidade[loc] = { soma: 0, count: 0 };
+            tempoEsperaPorUnidade[loc].soma += tempoEspera;
+            tempoEsperaPorUnidade[loc].count++;
+          }
+        }
       });
 
-      const situacoesOrdenadas = Object.entries(contagemSituacao)
-        .sort((a, b) => b[1] - a[1]);
+      const deltasFOIS = [];
+      const deltasASHA = [];
+      let pacientesEvoluiramPositivo = 0;
+      let totalPacientesComFOISMultiplo = 0;
 
-      const labelsGrafico = situacoesOrdenadas.map(i => i[0]);
-      const valoresGrafico = situacoesOrdenadas.map(i => i[1]);
-      const coresGrafico = labelsGrafico.map(label => mapaCoresDesfecho[label] || mapaCoresDesfecho['Outros']);
+      const entradaFOIS = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
+      const saidaFOIS   = { 'Nível 1-3': 0, 'Nível 4': 0, 'Nível 5-7': 0 };
 
-      document.getElementById('kpiTotal').textContent = total.toLocaleString('pt-BR');
-      document.getElementById('kpiAltas').textContent = altas.toLocaleString('pt-BR');
-      document.getElementById('pctAltas').textContent = total ? `${((altas/total)*100).toFixed(1)}% do total` : '0%';
-      document.getElementById('kpiObitos').textContent = obitos.toLocaleString('pt-BR');
-      document.getElementById('pctObitos').textContent = total ? `${((obitos/total)*100).toFixed(1)}% do total` : '0%';
-      document.getElementById('kpiOrientacoes').textContent = comOrientacao.toLocaleString('pt-BR');
+      Object.values(historicoPacientes).forEach(registros => {
+        registros.sort((a, b) => a.data - b.data);
 
-      new Chart(document.getElementById('chartSituacao'), {
-        type: 'doughnut',
+        const comFOIS = registros.filter(r => r.fois !== null);
+        if (comFOIS.length > 0) {
+          const primeiroFOIS = comFOIS[0].fois;
+          const ultimoFOIS = comFOIS[comFOIS.length - 1].fois;
+
+          const classificarFaixa = (n) => n <= 3 ? 'Nível 1-3' : (n === 4 ? 'Nível 4' : 'Nível 5-7');
+          entradaFOIS[classificarFaixa(primeiroFOIS)]++;
+          saidaFOIS[classificarFaixa(ultimoFOIS)]++;
+
+          if (comFOIS.length >= 2) {
+            totalPacientesComFOISMultiplo++;
+            const diff = ultimoFOIS - primeiroFOIS;
+            deltasFOIS.push(diff);
+            if (diff > 0) pacientesEvoluiramPositivo++;
+          }
+        }
+
+        const comASHA = registros.filter(r => r.asha !== null);
+        if (comASHA.length >= 2) {
+          deltasASHA.push(comASHA[comASHA.length - 1].asha - comASHA[0].asha);
+        }
+      });
+
+      const mediaFOIS = deltasFOIS.length > 0 ? (deltasFOIS.reduce((a, b) => a + b, 0) / deltasFOIS.length).toFixed(2) : null;
+      const mediaASHA = deltasASHA.length > 0 ? (deltasASHA.reduce((a, b) => a + b, 0) / deltasASHA.length).toFixed(2) : null;
+      
+      document.getElementById('kpi-total-unicos').innerText = idsProcessados.size;
+      document.getElementById('kpi-total-registros').innerText = linhas.length;
+      
+      const pctSla = qtdEsperaValida > 0 ? ((qtdSla24h / qtdEsperaValida) * 100).toFixed(1) + "%" : "0%";
+      document.getElementById('kpi-sla-24h').innerText = pctSla;
+
+      const mediaEspera = qtdEsperaValida > 0 ? (somaEspera / qtdEsperaValida).toFixed(1) : 0;
+      document.getElementById('kpi-tempo-medio').innerText = `${mediaEspera} h`;
+
+      const mediaSessoes = idsProcessados.size > 0 ? (linhas.length / idsProcessados.size).toFixed(1) : "0";
+      document.getElementById('kpi-sessoes-paciente').innerText = mediaSessoes;
+
+      const pctEvolucao = totalPacientesComFOISMultiplo > 0 ? ((pacientesEvoluiramPositivo / totalPacientesComFOISMultiplo) * 100).toFixed(1) + "%" : "N/D";
+      document.getElementById('kpi-pct-evolucao').innerText = pctEvolucao;
+
+      const pctTQT = linhas.length > 0 ? ((qtdComTQT / linhas.length) * 100).toFixed(1) + "%" : "0%";
+      document.getElementById('kpi-pct-tqt').innerText = pctTQT;
+
+      document.getElementById('kpi-delta-fois').innerText = mediaFOIS !== null ? (mediaFOIS > 0 ? `+${mediaFOIS}` : mediaFOIS) : 'N/D';
+      document.getElementById('kpi-delta-asha').innerText = mediaASHA !== null ? (mediaASHA > 0 ? `+${mediaASHA}` : mediaASHA) : 'N/D';
+
+      let datasOrdenadas = Array.from(conjuntoTodasDatas).sort();
+      if (datasOrdenadas.length > 0 && periodoSelecionado !== 'TODOS') {
+        const dataMaisRecenteISO = datasOrdenadas[datasOrdenadas.length - 1];
+        const dataAncora = new Date(dataMaisRecenteISO + "T00:00:00");
+        let dataLimite = new Date(dataAncora);
+        if (periodoSelecionado === '1Y') dataLimite.setFullYear(dataAncora.getFullYear() - 1);
+        else if (periodoSelecionado === '6M') dataLimite.setMonth(dataAncora.getMonth() - 6);
+        else if (periodoSelecionado === '3M') dataLimite.setMonth(dataAncora.getMonth() - 3);
+        else if (periodoSelecionado === '1M') dataLimite.setMonth(dataAncora.getMonth() - 1);
+        else if (periodoSelecionado === '1W') dataLimite.setDate(dataAncora.getDate() - 7);
+        else if (periodoSelecionado === '1D') dataLimite.setDate(dataAncora.getDate() - 1);
+
+        datasOrdenadas = datasOrdenadas.filter(dataISO => new Date(dataISO + "T00:00:00") >= dataLimite);
+      }
+
+      const rotulosDatas = datasOrdenadas.map(dataISO => formatarDataExibicao(dataISO));
+      const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
+      const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
+
+      renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
+      renderizarGraficoNivelAssistencial(niveisAssistenciais);
+      
+      const consultoresOriginais = Object.entries(consultores);
+      renderizarGraficoBarras('graficoConsultores', consultoresOriginais.map(i => i[0]), consultoresOriginais.map(i => i[1]), 'Atendimentos');
+      
+      renderizarGraficoPizza('graficoTurnos', Object.keys(turnos), Object.values(turnos));
+      renderizarGraficoSolicitantes(Object.keys(solicitantes), Object.values(solicitantes));
+
+      renderizarGraficoEvolucaoFois(entradaFOIS, saidaFOIS);
+      renderizarGraficoPizza('graficoViasAlimentacao', Object.keys(viasAlimentacao), Object.values(viasAlimentacao));
+      renderizarGraficoDiaSemana(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], diasSemana);
+      renderizarGraficoAVC(Object.keys(dadosAVC), Object.values(dadosAVC));
+
+      const topEsp = Object.entries(especialidades).sort((a,b) => b[1] - a[1]).slice(0, 7);
+      renderizarGraficoBarraHorizontal('graficoEspecialidades', topEsp.map(i => i[0]), topEsp.map(i => i[1]), '#17a2b8');
+
+      const rankingUnidades = Object.entries(tempoEsperaPorUnidade)
+        .map(([loc, obj]) => ({ loc, media: obj.soma / obj.count }))
+        .sort((a,b) => b.media - a.media)
+        .slice(0, 8);
+      renderizarGraficoBarraHorizontal('graficoEsperaUnidades', rankingUnidades.map(i => i.loc), rankingUnidades.map(i => i.media.toFixed(1)), '#dc3545');
+    }
+
+    // FUNÇÕES DE RENDERIZAÇÃO DOS GRÁFICOS
+    function renderizarGraficoLinhaTempo(labelsDatas, dadosSolicitados, dadosAtendidos) {
+      destruirGraficoSeExistir('graficoLinhaTempo');
+      const ctx = document.getElementById('graficoLinhaTempo').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
         data: {
-          labels: labelsGrafico,
-          datasets: [{
-            data: valoresGrafico,
-            backgroundColor: coresGrafico,
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 6
-          }]
+          labels: labelsDatas,
+          datasets: [
+            { label: 'Solicitadas', data: dadosSolicitados, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', borderWidth: 2, fill: true, tension: 0.3 },
+            { label: 'Atendidas', data: dadosAtendidos, borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: false } } }
+      });
+    }
+
+    function renderizarGraficoEvolucaoFois(entrada, saida) {
+      destruirGraficoSeExistir('graficoEvolucaoFois');
+      const ctx = document.getElementById('graficoEvolucaoFois').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['FOIS 1-3', 'FOIS 4', 'FOIS 5-7'],
+          datasets: [
+            { label: 'Primeiro Atendimento', data: [entrada['Nível 1-3'], entrada['Nível 4'], entrada['Nível 5-7']], backgroundColor: '#dc3545', borderRadius: 4 },
+            { label: 'Último Atendimento', data: [saida['Nível 1-3'], saida['Nível 4'], saida['Nível 5-7']], backgroundColor: '#28a745', borderRadius: 4 }
+          ]
+        },
+        options: { responsive: true, plugins: { datalabels: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderizarGraficoDiaSemana(dias, contagemObj) {
+      destruirGraficoSeExistir('graficoDiaSemana');
+      const ctx = document.getElementById('graficoDiaSemana').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dias,
+          datasets: [{ label: 'Solicitações', data: dias.map(d => contagemObj[d] || 0), backgroundColor: '#0056b3', borderRadius: 4 }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderizarGraficoBarraHorizontal(idCanvas, rotulos, dados, cor) {
+      destruirGraficoSeExistir(idCanvas);
+      const canvas = document.getElementById(idCanvas);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rotulos,
+          datasets: [{ data: dados, backgroundColor: cor, borderRadius: 4 }]
         },
         options: {
+          indexAxis: 'y',
           responsive: true,
-          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { x: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function renderizarGraficoNivelAssistencial(dadosNiveis) {
+      destruirGraficoSeExistir('graficoNivelAssistencial');
+      const ctx = document.getElementById('graficoNivelAssistencial').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Alto', 'Médio', 'Baixo', 'Não Informado'],
+          datasets: [{ data: [dadosNiveis['Alto'], dadosNiveis['Médio'], dadosNiveis['Baixo'], dadosNiveis['Não Informado']], backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#6c757d'], borderRadius: 6 }]
+        },
+        options: { 
+          responsive: true, layout: { padding: { top: 25 } },
+          plugins: { 
+            legend: { display: false },
+            datalabels: {
+              anchor: 'end', align: 'end', color: '#333', font: { weight: 'bold', size: 11 },
+              formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (sum === 0 || value === 0) return '';
+                return parseFloat((value * 100 / sum).toFixed(1)) + "%";
+              }
+            }
+          }, 
+          scales: { y: { beginAtZero: true } } 
+        }
+      });
+    }
+
+    function renderizarGraficoBarras(idCanvas, rotulos, dados, legenda) {
+      destruirGraficoSeExistir(idCanvas);
+      const alturaIdeal = Math.max(300, rotulos.length * 28);
+      document.getElementById('wrapperGraficoConsultores').style.height = alturaIdeal + "px";
+
+      const ctx = document.getElementById(idCanvas).getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rotulos,
+          datasets: [{ label: legenda, data: dados, backgroundColor: '#0056b3', borderRadius: 6 }]
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { display: false }, datalabels: { display: false } },
+          scales: { y: { ticks: { autoSkip: false } } }
+        }
+      });
+    }
+
+    function renderizarGraficoPizza(idCanvas, rotulos, dados) {
+      destruirGraficoSeExistir(idCanvas);
+      const ctx = document.getElementById(idCanvas).getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: rotulos,
+          datasets: [{ data: dados, backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#17a2b8', '#fd7e14'] }]
+        },
+        options: { 
+          responsive: true,
           plugins: {
-            legend: {
-              position: 'bottom',
-              labels: { 
-                font: { size: 11, weight: '500' }, 
-                padding: 12,
-                boxWidth: 14
+            datalabels: {
+              color: '#fff', font: { weight: 'bold', size: 11 },
+              formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (sum === 0 || value === 0) return '';
+                let perc = (value * 100 / sum);
+                return perc < 5 ? '' : parseFloat(perc.toFixed(1)) + "%";
               }
             }
           }
         }
       });
-
-      const topDietas = Object.entries(contagemDieta).sort((a,b) => b[1] - a[1]).slice(0, 6);
-      new Chart(document.getElementById('chartDieta'), {
-        type: 'bar',
-        data: {
-          labels: topDietas.map(i => i[0]),
-          datasets: [{
-            label: 'Nº de Pacientes',
-            data: topDietas.map(i => i[1]),
-            backgroundColor: '#8b5cf6',
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } }
-        }
-      });
-
-      const topLocais = Object.entries(contagemLocal).sort((a,b) => b[1] - a[1]).slice(0, 10);
-      new Chart(document.getElementById('chartLocal'), {
-        type: 'bar',
-        data: {
-          labels: topLocais.map(i => i[0]),
-          datasets: [{
-            label: 'Pacientes por Setor',
-            data: topLocais.map(i => i[1]),
-            backgroundColor: '#3b82f6',
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } }
-        }
-      });
-
-      renderTabela();
     }
 
-    function renderTabela() {
-      const tbody = document.getElementById('tabelaBody');
-      const inicio = (paginaAtual - 1) * itensPorPagina;
-      const paginaItens = listaFiltrada.slice(inicio, inicio + itensPorPagina);
+    function renderizarGraficoSolicitantes(rotulos, dados) {
+      destruirGraficoSeExistir('graficoSolicitantes');
+      const ctx = document.getElementById('graficoSolicitantes').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: rotulos,
+          datasets: [{ data: dados, backgroundColor: ['#17a2b8', '#6f42c1', '#ced4da'] }]
+        },
+        options: { 
+          responsive: true,
+          plugins: {
+            datalabels: {
+              color: '#fff', font: { weight: 'bold', size: 11 },
+              formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (sum === 0 || value === 0) return '';
+                let perc = (value * 100 / sum);
+                return perc < 5 ? '' : parseFloat(perc.toFixed(1)) + "%";
+              }
+            }
+          }
+        }
+      });
+    }
 
-      if (listaFiltrada.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhum registro encontrado.</td></tr>`;
-        document.getElementById('pageInfo').textContent = 'Página 0 de 0';
-        document.getElementById('btnPrev').disabled = true;
-        document.getElementById('btnNext').disabled = true;
+    function renderizarGraficoAVC(rotulos, dados) {
+      destruirGraficoSeExistir('graficoAVC');
+      const ctx = document.getElementById('graficoAVC').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: rotulos,
+          datasets: [{
+            data: dados,
+            backgroundColor: ['#dc3545', '#ffc107', '#ced4da']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            datalabels: {
+              color: '#333',
+              font: { weight: 'bold', size: 11 },
+              formatter: (value, ctx) => {
+                let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                if (sum === 0 || value === 0) return '';
+                let perc = (value * 100 / sum);
+                return perc < 3 ? '' : parseFloat(perc.toFixed(1)) + "%";
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // MODAL PDF
+    function abrirModalPDF() {
+      const container = document.getElementById('container-checkboxes-pdf');
+      container.innerHTML = '';
+
+      const blocos = document.querySelectorAll('.pdf-block');
+      
+      blocos.forEach((bloco, index) => {
+        const nome = bloco.getAttribute('data-pdf-nome') || `Bloco ${index + 1}`;
+        
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;';
+        
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = true;
+        chk.className = 'chk-pdf-item';
+        chk.value = index;
+
+        label.appendChild(chk);
+        label.appendChild(document.createTextNode(nome));
+        container.appendChild(label);
+      });
+
+      document.getElementById('modal-exportar-pdf').style.display = 'flex';
+    }
+
+    function fecharModalPDF() {
+      document.getElementById('modal-exportar-pdf').style.display = 'none';
+    }
+
+    // PROCESSAMENTO PDF COM LAYOUT EM 2 COLUNAS LADO A LADO
+    async function processarPDFSelecionado() {
+      const { jsPDF } = window.jspdf;
+      const checkboxes = document.querySelectorAll('.chk-pdf-item');
+      const blocos = document.querySelectorAll('.pdf-block');
+      
+      fecharModalPDF();
+
+      const blocosParaExportar = [];
+      checkboxes.forEach((chk, index) => {
+        if (chk.checked) {
+          blocosParaExportar.push(blocos[index]);
+        }
+      });
+
+      if (blocosParaExportar.length === 0) {
+        alert("Selecione ao menos um bloco para exportar.");
         return;
       }
 
-      tbody.innerHTML = paginaItens.map(p => {
-        const sitLower = p.situacao.toLowerCase();
-        let badgeClass = 'badge-outro';
-        if (sitLower.includes('alta')) badgeClass = 'badge-alta';
-        if (sitLower.includes('obito') || sitLower.includes('óbito')) badgeClass = 'badge-obito';
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfLargura = pdf.internal.pageSize.getWidth();
+      const pdfAltura = pdf.internal.pageSize.getHeight();
+      
+      const margemX = 10;
+      const larguraUtil = pdfLargura - (margemX * 2);
+      const margemTopo = 12;
+      const margemRodape = 15;
+      const espacamento = 6;
 
-        return `
-          <tr>
-            <td><strong>${p.local}</strong></td>
-            <td>${p.prontuario}</td>
-            <td>${p.nome}</td>
-            <td>${p.dieta}</td>
-            <td><span class="badge ${badgeClass}">${p.situacao}</span></td>
-            <td>${p.orientacoes || '<span style="color:#cbd5e1;">-</span>'}</td>
-          </tr>
-        `;
-      }).join('');
+      const maxAlturaBloco = (pdfAltura - margemTopo - margemRodape) / 3.5; 
+      const colWidth = (larguraUtil - espacamento) / 2;
 
-      const totalPaginas = Math.ceil(listaFiltrada.length / itensPorPagina);
-      document.getElementById('pageInfo').textContent = `Página ${paginaAtual} de ${totalPaginas} (${listaFiltrada.length} registros)`;
-      document.getElementById('btnPrev').disabled = paginaAtual === 1;
-      document.getElementById('btnNext').disabled = paginaAtual >= totalPaginas;
+      let posY = margemTopo;
+      let col = 0; // 0 = Esquerda, 1 = Direita
+      let rowMaxHeight = 0;
+
+      try {
+        for (let i = 0; i < blocosParaExportar.length; i++) {
+          const bloco = blocosParaExportar[i];
+
+          const canvas = await html2canvas(bloco, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+
+          // Identifica se é um bloco compacto de grid ou de largura total pelo tipo de classe
+          const isCompact = bloco.classList.contains('chart-card');
+
+          if (isCompact) {
+            let targetWidth = colWidth;
+            let targetHeight = (canvas.height * targetWidth) / canvas.width;
+            if (targetHeight > maxAlturaBloco) {
+              targetHeight = maxAlturaBloco;
+            }
+
+            if (col === 0) {
+              if (posY + targetHeight > (pdfAltura - margemRodape) && posY > margemTopo) {
+                pdf.addPage();
+                posY = margemTopo;
+              }
+
+              pdf.addImage(imgData, 'PNG', margemX, posY, targetWidth, targetHeight);
+              rowMaxHeight = targetHeight;
+              col = 1;
+            } else {
+              let posX = margemX + colWidth + espacamento;
+
+              if (posY + targetHeight > (pdfAltura - margemRodape)) {
+                pdf.addPage();
+                posY = margemTopo;
+                posX = margemX;
+                pdf.addImage(imgData, 'PNG', posX, posY, targetWidth, targetHeight);
+                rowMaxHeight = targetHeight;
+                col = 1;
+              } else {
+                pdf.addImage(imgData, 'PNG', posX, posY, targetWidth, targetHeight);
+                rowMaxHeight = Math.max(rowMaxHeight, targetHeight);
+                posY += rowMaxHeight + espacamento;
+                col = 0;
+                rowMaxHeight = 0;
+              }
+            }
+          } else {
+            if (col === 1) {
+              posY += rowMaxHeight + espacamento;
+              col = 0;
+              rowMaxHeight = 0;
+            }
+
+            let targetWidth = larguraUtil;
+            let targetHeight = (canvas.height * larguraUtil) / canvas.width;
+            if (targetHeight > maxAlturaBloco) {
+              targetHeight = maxAlturaBloco;
+            }
+
+            if (posY + targetHeight > (pdfAltura - margemRodape) && posY > margemTopo) {
+              pdf.addPage();
+              posY = margemTopo;
+            }
+
+            pdf.addImage(imgData, 'PNG', margemX, posY, targetWidth, targetHeight);
+            posY += targetHeight + espacamento;
+          }
+        }
+
+        const totalPaginas = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPaginas; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(8);
+          pdf.setTextColor(140, 140, 140);
+          pdf.text('Dashboard Desenvolvido por Fgo Marvin Azevedo', pdfLargura / 2, pdfAltura - 6, { align: 'center' });
+        }
+
+        const dataHoje = new Date().toISOString().split('T')[0];
+        pdf.save(`Relatorio_Fonoaudiologia_${dataHoje}.pdf`);
+
+      } catch (erro) {
+        alert("Erro ao gerar o PDF: " + erro);
+      }
     }
 
-    function mudarPagina(delta) {
-      paginaAtual += delta;
-      renderTabela();
-    }
-
-    document.getElementById('searchInput').addEventListener('input', e => {
-      const termo = e.target.value.toLowerCase();
-      listaFiltrada = listaPacientes.filter(p => 
-        p.nome.toLowerCase().includes(termo) ||
-        p.local.toLowerCase().includes(termo) ||
-        p.dieta.toLowerCase().includes(termo) ||
-        p.situacao.toLowerCase().includes(termo) ||
-        p.orientacoes.toLowerCase().includes(termo) ||
-        p.prontuario.toLowerCase().includes(termo)
-      );
-      paginaAtual = 1;
-      renderTabela();
+    // Leitura automática do DADOS.csv com sanitização de cabeçalho
+    Papa.parse(NOME_ARQUIVO_CSV, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      encoding: "UTF-8",
+      transformHeader: function(header) {
+        return header.replace(/^\uFEFF/, '').trim();
+      },
+      complete: function(results) {
+        if (results.data && results.data.length > 0) {
+          dadosBrutosCSV = results.data;
+          preencherOpcoesDeFiltro(dadosBrutosCSV);
+          configurarLimitesDatas(dadosBrutosCSV);
+          processarDadosCSV(dadosBrutosCSV);
+        }
+      },
+      error: function() {
+        console.warn("Não foi possível carregar o arquivo automático DADOS.csv. Utilize o campo de seleção de arquivo manual.");
+      }
     });
   </script>
 </body>
