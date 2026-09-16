@@ -17,6 +17,59 @@
       background-color: #f0f2f5;
       color: #1c1e21;
     }
+
+    /* --- MENU DE NAVEGAÇÃO SUPERIOR UNIFICADO --- */
+    .top-nav {
+      background-color: #004085;
+      margin: -30px -30px 25px -30px;
+      padding: 0 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 55px;
+    }
+    .nav-brand {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+    .nav-item {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+    .nav-item:hover {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    .nav-item.active {
+      color: #ffffff;
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    @media (max-width: 600px) {
+      .nav-container {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 0;
+        gap: 8px;
+      }
+    }
+
     header {
       margin-bottom: 20px;
     }
@@ -315,6 +368,17 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+
+  <!-- MENU DE NAVEGAÇÃO SUPERIOR -->
+  <nav class="top-nav">
+    <div class="nav-container">
+      <span class="nav-brand">Fonoaudiologia — HCPA</span>
+      <div class="nav-links">
+        <a href="https://marvinsilva.github.io/dashboardfono/" class="nav-item active">Dashboard Gestão</a>
+        <a href="https://marvinsilva.github.io/disfagiaadulto/" class="nav-item">Indicadores de Altas</a>
+      </div>
+    </div>
+  </nav>
 
   <header>
     <h1>Gestão Fonoaudiologia — HCPA</h1>
