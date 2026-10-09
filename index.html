@@ -485,7 +485,6 @@
     </div>
   </div>
 
-  <!-- LINHA DO TEMPO GERAL -->
   <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Solicitadas vs. Atendidas)">
     <div class="timeline-header">
       <h2 style="margin: 0;">Linha do tempo: Consultorias Solicitadas vs. Atendimentos Realizados</h2>
@@ -501,25 +500,6 @@
     </div>
     <div style="position: relative; height: 320px;">
       <canvas id="graficoLinhaTempo"></canvas>
-    </div>
-  </div>
-
-  <!-- GRÁFICO DE LARGURA TOTAL DE EMERGÊNCIA -->
-  <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Emergência: Solicitadas vs. Atendidas)">
-    <div class="timeline-header">
-      <h2 style="margin: 0;">Consultorias de Emergência: Solicitadas vs. Atendimentos Realizados</h2>
-      <div class="time-buttons">
-        <button class="time-btn active" onclick="definirFiltroPeriodo('TODOS', this)">Todos</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('1Y', this)">1 Ano</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('6M', this)">6 Meses</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('3M', this)">3 Meses</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('1M', this)">1 Mês</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('1W', this)">1 Semana</button>
-        <button class="time-btn" onclick="definirFiltroPeriodo('1D', this)">Hoje</button>
-      </div>
-    </div>
-    <div style="position: relative; height: 320px;">
-      <canvas id="graficoEmergencia"></canvas>
     </div>
   </div>
 
@@ -672,14 +652,14 @@
       }
     }
 
-    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL
+    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL (Suporta textos sem acentos ou corrompidos)
     function extrairNivelAssistencial(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
       
       const textoLimpo = String(textoResposta)
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "") // Remove todos os acentos
         .replace(/\s+/g, " ");
 
       const regexNivel = /nivel\s+assistencial\s*[:\-=]?\s*([a-z]+)/i;
@@ -692,6 +672,7 @@
         if (valor.includes('baixo')) return 'Baixo';
       }
 
+      // Busca direta secundária no texto caso não haja dois pontos após o título
       if (/nivel\s+assistencial.*?\balto\b/i.test(textoLimpo)) return 'Alto';
       if (/nivel\s+assistencial.*?\bmedio\b/i.test(textoLimpo)) return 'Médio';
       if (/nivel\s+assistencial.*?\bbaixo\b/i.test(textoLimpo)) return 'Baixo';
@@ -865,13 +846,8 @@
 
     function definirFiltroPeriodo(opcao, elementoBotao) {
       periodoSelecionado = opcao;
-      document.querySelectorAll('.time-btn').forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${opcao}'`)) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
+      document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+      elementoBotao.classList.add('active');
       aplicarFiltro();
     }
 
@@ -997,11 +973,6 @@
 
       const contagemSolicitacoesPorDia = {};
       const contagemRespostasPorDia = {};
-      
-      // Contagem Específica para Emergência (Totalmente isolada)
-      const contagemEmergenciaSolicitadas = {};
-      const contagemEmergenciaAtendidas = {};
-
       const conjuntoTodasDatas = new Set();
       const historicoPacientes = {};
 
@@ -1038,21 +1009,6 @@
         viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
         if (temTQT) qtdComTQT++;
         dadosAVC[statusAVC]++;
-
-        // FILTRO EXCLUSIVO DE EMERGÊNCIA (Apenas registros com "FONOAUDIOLOGIA EMERGÊNCIA" na coluna RESPOSTA)
-        const isEmergencia = /FONOAUDIOLOGIA EMERGÊNCIA/i.test(textoResposta || '');
-        if (isEmergencia) {
-          // Solicitadas na emergência: contam na data de SOLIC_CONSULTORIA (coluna N)
-          if (dataSolic) {
-            contagemEmergenciaSolicitadas[dataSolic] = (contagemEmergenciaSolicitadas[dataSolic] || 0) + 1;
-            conjuntoTodasDatas.add(dataSolic);
-          }
-          // Atendidas na emergência: contam estritamente na data de DTHR_RESPOSTA (coluna M)
-          if (dataResp) {
-            contagemEmergenciaAtendidas[dataResp] = (contagemEmergenciaAtendidas[dataResp] || 0) + 1;
-            conjuntoTodasDatas.add(dataResp);
-          }
-        }
 
         if (conselho && typeof conselho === 'string') {
           const cUpper = conselho.toUpperCase();
@@ -1201,12 +1157,7 @@
       const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
       const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
 
-      // Vetores de Emergência
-      const vetorEmergenciaSolic = datasOrdenadas.map(dataISO => contagemEmergenciaSolicitadas[dataISO] || 0);
-      const vetorEmergenciaAtend = datasOrdenadas.map(dataISO => contagemEmergenciaAtendidas[dataISO] || 0);
-
       renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
-      renderizarGraficoEmergencia(rotulosDatas, vetorEmergenciaSolic, vetorEmergenciaAtend);
       renderizarGraficoNivelAssistencial(niveisAssistenciais);
       
       const consultoresOriginais = Object.entries(consultores);
@@ -1244,48 +1195,6 @@
           ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: false } } }
-      });
-    }
-
-    function renderizarGraficoEmergencia(labelsDatas, dadosSolicitados, dadosAtendidos) {
-      destruirGraficoSeExistir('graficoEmergencia');
-      const ctx = document.getElementById('graficoEmergencia').getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labelsDatas,
-          datasets: [
-            { 
-              label: 'Solicitadas (Emergência)', 
-              data: dadosSolicitados, 
-              borderColor: '#e83e8c', 
-              backgroundColor: 'rgba(232, 62, 140, 0.1)', 
-              borderWidth: 2, 
-              fill: true, 
-              tension: 0.3 
-            },
-            { 
-              label: 'Atendidas (Emergência)', 
-              data: dadosAtendidos, 
-              borderColor: '#20c997', 
-              backgroundColor: 'rgba(32, 201, 151, 0.1)', 
-              borderWidth: 2, 
-              fill: true, 
-              tension: 0.3 
-            }
-          ]
-        },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false, 
-          plugins: { 
-            legend: { position: 'top' }, 
-            datalabels: { display: false } 
-          },
-          scales: {
-            y: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
       });
     }
 
