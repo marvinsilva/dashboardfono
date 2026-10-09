@@ -504,7 +504,7 @@
     </div>
   </div>
 
-  <!-- NOVO GRÁFICO DE LARGURA TOTAL DE EMERGÊNCIA COM FILTROS DE TEMPO -->
+  <!-- GRÁFICO DE LARGURA TOTAL DE EMERGÊNCIA -->
   <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Emergência: Solicitadas vs. Atendidas)">
     <div class="timeline-header">
       <h2 style="margin: 0;">Consultorias de Emergência: Solicitadas vs. Atendimentos Realizados</h2>
@@ -679,7 +679,7 @@
       const textoLimpo = String(textoResposta)
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+        .replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, " ");
 
       const regexNivel = /nivel\s+assistencial\s*[:\-=]?\s*([a-z]+)/i;
@@ -863,7 +863,6 @@
       aplicarFiltro();
     }
 
-    // SINCRONIZA OS BOTÕES DE PERÍODO EM AMBOS OS GRÁFICOS DE LINHA DO TEMPO
     function definirFiltroPeriodo(opcao, elementoBotao) {
       periodoSelecionado = opcao;
       document.querySelectorAll('.time-btn').forEach(btn => {
@@ -999,7 +998,7 @@
       const contagemSolicitacoesPorDia = {};
       const contagemRespostasPorDia = {};
       
-      // Contagem Específica para Emergência
+      // Contagem Específica para Emergência (Totalmente isolada)
       const contagemEmergenciaSolicitadas = {};
       const contagemEmergenciaAtendidas = {};
 
@@ -1040,18 +1039,18 @@
         if (temTQT) qtdComTQT++;
         dadosAVC[statusAVC]++;
 
-        // REGEX EMERGÊNCIA (Coluna RESPOSTA contendo "FONOAUDIOLOGIA EMERGÊNCIA")
+        // FILTRO EXCLUSIVO DE EMERGÊNCIA (Apenas registros com "FONOAUDIOLOGIA EMERGÊNCIA" na coluna RESPOSTA)
         const isEmergencia = /FONOAUDIOLOGIA EMERGÊNCIA/i.test(textoResposta || '');
         if (isEmergencia) {
+          // Solicitadas na emergência: contam na data de SOLIC_CONSULTORIA (coluna N)
           if (dataSolic) {
             contagemEmergenciaSolicitadas[dataSolic] = (contagemEmergenciaSolicitadas[dataSolic] || 0) + 1;
             conjuntoTodasDatas.add(dataSolic);
           }
+          // Atendidas na emergência: contam estritamente na data de DTHR_RESPOSTA (coluna M)
           if (dataResp) {
             contagemEmergenciaAtendidas[dataResp] = (contagemEmergenciaAtendidas[dataResp] || 0) + 1;
             conjuntoTodasDatas.add(dataResp);
-          } else if (dataSolic) {
-            contagemEmergenciaAtendidas[dataSolic] = (contagemEmergenciaAtendidas[dataSolic] || 0) + 1;
           }
         }
 
@@ -1202,7 +1201,7 @@
       const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
       const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
 
-      // Vetores para Emergência
+      // Vetores de Emergência
       const vetorEmergenciaSolic = datasOrdenadas.map(dataISO => contagemEmergenciaSolicitadas[dataISO] || 0);
       const vetorEmergenciaAtend = datasOrdenadas.map(dataISO => contagemEmergenciaAtendidas[dataISO] || 0);
 
