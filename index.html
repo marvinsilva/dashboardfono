@@ -514,6 +514,14 @@
 
   <!-- Gráficos Gerenciais e Clínicos -->
   <div class="charts-grid">
+    <!-- NOVO GRÁFICO DE EMERGÊNCIA -->
+    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Demanda de Emergência">
+      <h2>Consultorias de Emergência (Solicitadas vs. Atendidas)</h2>
+      <div style="position: relative; height: 260px;">
+        <canvas id="graficoEmergencia"></canvas>
+      </div>
+    </div>
+
     <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Evolução FOIS">
       <h2>Evolução FOIS: Entrada vs. Saída</h2>
       <canvas id="graficoEvolucaoFois"></canvas>
@@ -973,6 +981,11 @@
 
       const contagemSolicitacoesPorDia = {};
       const contagemRespostasPorDia = {};
+      
+      // Contagem Específica para Emergência
+      const contagemEmergenciaSolicitadas = {};
+      const contagemEmergenciaAtendidas = {};
+
       const conjuntoTodasDatas = new Set();
       const historicoPacientes = {};
 
@@ -1009,6 +1022,21 @@
         viasAlimentacao[via] = (viasAlimentacao[via] || 0) + 1;
         if (temTQT) qtdComTQT++;
         dadosAVC[statusAVC]++;
+
+        // REGEX EMERGÊNCIA (Coluna RESPOSTA contendo exact/case-insensitive "FONOAUDIOLOGIA EMERGÊNCIA")
+        const isEmergencia = /FONOAUDIOLOGIA EMERGÊNCIA/i.test(textoResposta || '');
+        if (isEmergencia) {
+          if (dataSolic) {
+            contagemEmergenciaSolicitadas[dataSolic] = (contagemEmergenciaSolicitadas[dataSolic] || 0) + 1;
+            conjuntoTodasDatas.add(dataSolic);
+          }
+          if (dataResp) {
+            contagemEmergenciaAtendidas[dataResp] = (contagemEmergenciaAtendidas[dataResp] || 0) + 1;
+            conjuntoTodasDatas.add(dataResp);
+          } else if (dataSolic) {
+            contagemEmergenciaAtendidas[dataSolic] = (contagemEmergenciaAtendidas[dataSolic] || 0) + 1;
+          }
+        }
 
         if (conselho && typeof conselho === 'string') {
           const cUpper = conselho.toUpperCase();
@@ -1157,7 +1185,12 @@
       const vetorSolicitacoes = datasOrdenadas.map(dataISO => contagemSolicitacoesPorDia[dataISO] || 0);
       const vetorRespostas = datasOrdenadas.map(dataISO => contagemRespostasPorDia[dataISO] || 0);
 
+      // Vetores para Emergência
+      const vetorEmergenciaSolic = datasOrdenadas.map(dataISO => contagemEmergenciaSolicitadas[dataISO] || 0);
+      const vetorEmergenciaAtend = datasOrdenadas.map(dataISO => contagemEmergenciaAtendidas[dataISO] || 0);
+
       renderizarGraficoLinhaTempo(rotulosDatas, vetorSolicitacoes, vetorRespostas);
+      renderizarGraficoEmergencia(rotulosDatas, vetorEmergenciaSolic, vetorEmergenciaAtend);
       renderizarGraficoNivelAssistencial(niveisAssistenciais);
       
       const consultoresOriginais = Object.entries(consultores);
@@ -1195,6 +1228,48 @@
           ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' }, datalabels: { display: false } } }
+      });
+    }
+
+    function renderizarGraficoEmergencia(labelsDatas, dadosSolicitados, dadosAtendidos) {
+      destruirGraficoSeExistir('graficoEmergencia');
+      const ctx = document.getElementById('graficoEmergencia').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labelsDatas,
+          datasets: [
+            { 
+              label: 'Solicitadas (Emergência)', 
+              data: dadosSolicitados, 
+              borderColor: '#e83e8c', 
+              backgroundColor: 'rgba(232, 62, 140, 0.1)', 
+              borderWidth: 2, 
+              fill: true, 
+              tension: 0.3 
+            },
+            { 
+              label: 'Atendidas (Emergência)', 
+              data: dadosAtendidos, 
+              borderColor: '#20c997', 
+              backgroundColor: 'rgba(32, 201, 151, 0.1)', 
+              borderWidth: 2, 
+              fill: true, 
+              tension: 0.3 
+            }
+          ]
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          plugins: { 
+            legend: { position: 'top' }, 
+            datalabels: { display: false } 
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } }
+          }
+        }
       });
     }
 
