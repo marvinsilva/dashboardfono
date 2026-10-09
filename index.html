@@ -485,6 +485,7 @@
     </div>
   </div>
 
+  <!-- LINHA DO TEMPO GERAL -->
   <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Solicitadas vs. Atendidas)">
     <div class="timeline-header">
       <h2 style="margin: 0;">Linha do tempo: Consultorias Solicitadas vs. Atendimentos Realizados</h2>
@@ -503,6 +504,25 @@
     </div>
   </div>
 
+  <!-- NOVO GRÁFICO DE LARGURA TOTAL DE EMERGÊNCIA COM FILTROS DE TEMPO -->
+  <div class="timeline-card pdf-block" data-pdf-nome="Linha do Tempo (Emergência: Solicitadas vs. Atendidas)">
+    <div class="timeline-header">
+      <h2 style="margin: 0;">Consultorias de Emergência: Solicitadas vs. Atendimentos Realizados</h2>
+      <div class="time-buttons">
+        <button class="time-btn active" onclick="definirFiltroPeriodo('TODOS', this)">Todos</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1Y', this)">1 Ano</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('6M', this)">6 Meses</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('3M', this)">3 Meses</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1M', this)">1 Mês</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1W', this)">1 Semana</button>
+        <button class="time-btn" onclick="definirFiltroPeriodo('1D', this)">Hoje</button>
+      </div>
+    </div>
+    <div style="position: relative; height: 320px;">
+      <canvas id="graficoEmergencia"></canvas>
+    </div>
+  </div>
+
   <div class="full-width-card pdf-block" data-pdf-nome="Gráfico: Atendimentos por Consultor">
     <h2>Atendimentos por Consultor</h2>
     <div class="scroll-area-y">
@@ -514,14 +534,6 @@
 
   <!-- Gráficos Gerenciais e Clínicos -->
   <div class="charts-grid">
-    <!-- NOVO GRÁFICO DE EMERGÊNCIA -->
-    <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Demanda de Emergência">
-      <h2>Consultorias de Emergência (Solicitadas vs. Atendidas)</h2>
-      <div style="position: relative; height: 260px;">
-        <canvas id="graficoEmergencia"></canvas>
-      </div>
-    </div>
-
     <div class="chart-card pdf-block" data-pdf-nome="Gráfico: Evolução FOIS">
       <h2>Evolução FOIS: Entrada vs. Saída</h2>
       <canvas id="graficoEvolucaoFois"></canvas>
@@ -660,14 +672,14 @@
       }
     }
 
-    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL (Suporta textos sem acentos ou corrompidos)
+    // REGEX BLINDADA PARA NÍVEL ASSISTENCIAL
     function extrairNivelAssistencial(textoResposta) {
       if (!textoResposta || String(textoResposta).trim() === '') return 'Não Informado';
       
       const textoLimpo = String(textoResposta)
         .toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // Remove todos os acentos
+        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
         .replace(/\s+/g, " ");
 
       const regexNivel = /nivel\s+assistencial\s*[:\-=]?\s*([a-z]+)/i;
@@ -680,7 +692,6 @@
         if (valor.includes('baixo')) return 'Baixo';
       }
 
-      // Busca direta secundária no texto caso não haja dois pontos após o título
       if (/nivel\s+assistencial.*?\balto\b/i.test(textoLimpo)) return 'Alto';
       if (/nivel\s+assistencial.*?\bmedio\b/i.test(textoLimpo)) return 'Médio';
       if (/nivel\s+assistencial.*?\bbaixo\b/i.test(textoLimpo)) return 'Baixo';
@@ -852,10 +863,16 @@
       aplicarFiltro();
     }
 
+    // SINCRONIZA OS BOTÕES DE PERÍODO EM AMBOS OS GRÁFICOS DE LINHA DO TEMPO
     function definirFiltroPeriodo(opcao, elementoBotao) {
       periodoSelecionado = opcao;
-      document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-      elementoBotao.classList.add('active');
+      document.querySelectorAll('.time-btn').forEach(btn => {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${opcao}'`)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
       aplicarFiltro();
     }
 
@@ -1023,7 +1040,7 @@
         if (temTQT) qtdComTQT++;
         dadosAVC[statusAVC]++;
 
-        // REGEX EMERGÊNCIA (Coluna RESPOSTA contendo exact/case-insensitive "FONOAUDIOLOGIA EMERGÊNCIA")
+        // REGEX EMERGÊNCIA (Coluna RESPOSTA contendo "FONOAUDIOLOGIA EMERGÊNCIA")
         const isEmergencia = /FONOAUDIOLOGIA EMERGÊNCIA/i.test(textoResposta || '');
         if (isEmergencia) {
           if (dataSolic) {
